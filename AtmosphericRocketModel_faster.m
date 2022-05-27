@@ -1,13 +1,87 @@
-%% Atmospheric Rocket Model
-%% Created by Thomas Beimrohr on 4/3/22
+%% Header
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Name:
+% AtmosphericRocketModel_faster
+%
+% Date of Creation:
+% 04/3/2022
+%
+% Author(s):
+% Thomas Beimrohr
+% Jeff Kaji
+% Justin Kruse
+%
+% Description:
 % For the purpose of creating a more defined model towards the development
-% of a two stage rocket for PSP High Altitude.
-%% Inputs
-% Browse the section "Constants", in this section there are multiple
-% constants to change. If there is a vector quantity, this means you can
-% add more entries in order to model different propellents (use
-% "Performance" or "Formulation" codes to obtain the required
-% charecteristics of the propellant desired.
+% of a two stage rocket for PSP High Altitude. The model is a 1 dimensional
+% model that takes into account Cd variation, net forces of thrust drag
+% gravitational drag. The code as a whole is used to size the propulsion
+% system and then using empirical data size the inert mass of the rocket
+%
+% Inputs:
+% (required) dv_change = initial guess for the amount of delta v mission
+% will take
+% (required) desired_alt = desired altitude obtained by the rocket
+% (required) diameter1 = diameter of the first stage of the rocket
+% (required) diameter2 = diameter of the second stage of the rocket
+% (required) mpl = mass of the payload
+% (required) At_srb = area of the throat of the first stage of the rocket
+% (required) ep = expansion ratio of first stage
+% (required) At_srb2 = area of the throat of the second stage of the rocket
+% (required) ep2 = expansion ratio of second stage
+% (required) pc_graph = chamber pressure history for the first stage
+% (required) pc_graph2 = chamber pressure history for the second stage
+% (required) stageHeight = height at which seperation of first and second
+% stage should occur
+% (required) BeforeStageCoast = turns on or off the coasting function tied
+% to stageHeight
+% (required) cstar_srb = the c* for the propellant being used for both
+% first and second stage
+% (required) ve = exit velocity from the nozzle
+% (required) Pe_srb = exit pressure from the first stage nozzle
+% (required) Pe_srb2 = exit pressure from the first stage nozzle
+% (required) lam1 = propellant mass fraction of first stage from empirical data
+% lambda = (mass of propellant)/(total mass of system)
+% (required) lam2 = propellant mass fraction of second stage from empirical data
+% (required) Isp = Isp of the propellant chosen
+% (required) scale1 = delta v spread between the first and second stages
+% (required) Cd_o = coeffiencient of drag for rocket body
+%
+% Outputs:
+% (optional) Drag = time history for the drag force
+% (optional) Fnet = time history for the net force acting on the rocket
+% (optional) F_srb = time history for the thrust of the rocket
+% (optional) height = time history for the altitude obtained by the rocket
+% (optional) Mach = time history for the Mach of the rocket
+% (optional) mdot_srb = time history for the mass flowrate from stage 1
+% (optional) mdot_srb2 = time history for the mass flow rate of stage 2
+% (optional) m = time history for the total mass of the rocket
+% (optional) P = time history of atmospheric pressure
+% (optional) Q = time history for the dynamic pressure
+% (optional) Rho = time history of the atmospheric density
+% (optional) Son = time history of the atmospheric sonic velocity
+% (optional) T = time history of the atmospheric Temperature
+% (optional) t = time history for the time o flight
+% (optional) tb1(end) = burnout time of the first stage
+% (optional) tb2(end) = burnout time of the second stage
+% (optional) vel = time history for the velocity of the rocket
+% (optional) wDrag = time history for the weight drag of the rocket
+% (optional) acceleration = time history for the acceleration of the rocket
+%
+% Notes:
+% - Code is sensitive to the starting guess for delta v in "dv_change", if
+% code doesnt run aka time = nan, then try changing dv_change. 
+% - If the coasting option is turned on, and answers become either unreasonable or
+% nan or doesnt converge then the issue is the coasting height set in
+% "StageHeight" is too high, ie the rocket is stopped by drag and gravity
+% before it can reach the set point for second stage ignition. 
+% - constants with brackets [] are used for testing multiple propellants at
+% the same time
+% - The only known improvement at this time is to corelate the exit
+% pressure of the nozzle to the chamber pressure profile added by
+% "pc_graph" this can be done within CEA. Possibly add a CEA function to
+% produce this value and or the rest of the propellant inputs
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Start of Code
 tic
 clc
@@ -17,21 +91,19 @@ if go
     go = 1;
     j = 0;
 end
-
-%% User Input Parameters
-dv_change = 5.2384; %km/s
-desired_alt = 300; %km
+%% Constants
+dv_change = 5; %km/s
+desired_alt = 100; %km
 diameter1 = 4.5;%in
 diameter2 = 4; %in
 mpl = 1; %mass of the payload in kg
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%5
 %% Model
 dif_alt = 2;
 alt_tol = .01;
 check = 1;
 o = 1;
 while (abs(dif_alt - 1) > alt_tol) & check & o < 4 & go
-    %% Constants
+    %% Constants 2
     j = j + 1;
     dt = .01; %sec
     At_srb = ((1/12)^2)*pi/39.37; %m2, the value is converted from inches^2 to m^2
@@ -48,8 +120,8 @@ while (abs(dif_alt - 1) > alt_tol) & check & o < 4 & go
 
     cstar_srb = [1737.5]; %m/s
     ve = [2461.1]; %m/s
-    Pe_srb = [29073]; %Pa
-    Pe_srb2 = [29073]; %Pa
+    Pe_srb = [29073]; %Pa (assumes constant exit pressure during the flight, more indepth analysis is needed to find the fluctuation according to the chamber pressure)
+    Pe_srb2 = [29073]; %Pa (assumes constant exit pressure during the flight, more indepth analysis is needed to find the fluctuation according to the chamber pressure)
 
     tol = .00001; %this is the tolerance used to calculate propellant mass vs the given propellant mass, the code converges rather quickly so this value can be set extremely small to obtain "more accurate" results
     difmp = ones(1,length(ve)).*10; %initalizing the calculated prop mass difference
@@ -298,14 +370,14 @@ end
 
 %% plots
 figure(1)
-    plot(t{j}(1:index_coast2(end)),F_srb{j}(1:index_coast2(end))./1000)
-    hold on
-    plot(t{j},Drag{j}./1000)
-    plot(t{j},wDrag{j}./1000)
-    plot(t{j},F_net{j}./1000)
-    xlabel('Time [sec]')
-    ylabel('Force [kN]')
-    grid on
+plot(t{j}(1:index_coast2(end)),F_srb{j}(1:index_coast2(end))./1000)
+hold on
+plot(t{j},Drag{j}./1000)
+plot(t{j},wDrag{j}./1000)
+plot(t{j},F_net{j}./1000)
+xlabel('Time [sec]')
+ylabel('Force [kN]')
+grid on
 title('Forces Experienced up to 100 km')
 legend('Rocket Thrust','Drag','Weight Drag','Net Force','location','best')
 
