@@ -48,5 +48,12 @@ standard as follows.
    - Notes about further improvements/ known bugs
 - Code names must be descriptive of the codes intended purpose and 
   while being short
-  
+- Proper commenting inline with the code
+   - Initializing new variables should be commented to explain
+     purpose and or unit
+   - New sections within the code should be properly seperated with 
+     %% Section Name
+   - Any equation used at the users discression should be commented
+     with the source
+     
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
