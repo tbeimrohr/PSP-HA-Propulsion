@@ -53,7 +53,7 @@ standard as follows.
      purpose and or unit
    - New sections within the code should be properly separated with 
      %% Section Name
-   - Any equation used at the users discresion should be commented
+   - Any equation used at the users discretion should be commented
      with the source
      
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
