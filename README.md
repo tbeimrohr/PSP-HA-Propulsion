@@ -16,15 +16,19 @@ designated time in early fall of 2022.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 Proper Points of Contact for any of the code within include:
+
 Jeff Kaji (Lead Engineer)
 - cell (631) 316-6438
 - email jkaji@purdue.edu
+
 Amanda Petty (Project Manager)
 - cell (310) 926-6249
 - email petty16@purdue.edu
+
 Thomas Beimrohr (Propulsion Co-Lead)
 - cell (812) 946-2715
 - email tbeimroh@purdue.edu
+
 Justin Kruse (Propulsion Co-Lead)
 - cell (267) 397-6192
 - email jpkruse@purdue.edu
