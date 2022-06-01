@@ -37,7 +37,7 @@ Justin Kruse (Propulsion Co-Lead)
 
 All code that is contained within this repository MUST follow the
 standard as follows.
-- A header must be containted at the top of every code with the
+- A header must be contained at the top of every code with the
   following items listed
    - Code Name
    - Date of original creation
@@ -51,9 +51,9 @@ standard as follows.
 - Proper commenting inline with the code
    - Initializing new variables should be commented to explain
      purpose and or unit
-   - New sections within the code should be properly seperated with 
+   - New sections within the code should be properly separated with 
      %% Section Name
-   - Any equation used at the users discression should be commented
+   - Any equation used at the users discresion should be commented
      with the source
      
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
