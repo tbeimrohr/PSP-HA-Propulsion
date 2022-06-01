@@ -1,0 +1,12 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+In this repository, there are a list of branches, each
+of which do not have common scripts. The purpose is to
+include multiple projects under a single umbrella.
+If you are working on a branch please DO NOT push and
+commit your changes in that branch to main. You can
+however push and commit your changes freely to your 
+specific branch in which you are working.
+
+Contact the users in the README in order to verify
+correct compliance if confused.
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
