@@ -45,7 +45,10 @@ id = 1; % Combonation id sequencial order
 numBest = 1; % Take best n number of profiles from each generation
 numGens = 1; % Generations to run for
 
-import_combo = readmatrix("Design Matrix - Praeto.csv",'Range', 'A2:A127','OutputType','string');
+%import_combo = readmatrix("Design Matrix - Praeto.csv",'Range', 'A2:A127','OutputType','string');
+Pareto_write
+a = string(load('combos.txt'));
+import_combo = replace(a, '-', '0');
 
 for i = 1:length(import_combo)
     b = run(i,numBest,numGens,curve1=pc_graph,curve2=pc_graph2,stage=1);
