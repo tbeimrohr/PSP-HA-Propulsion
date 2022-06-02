@@ -34,31 +34,31 @@ for i = 1:length(comb)
 end
 
 %% Normalize
-P = 3;
-tb_factor = (tb_factor./max(tb_factor)).^P;
-mpl_factor = (mpl_factor./max(mpl_factor)).^P;
-alt_factor = (alt_factor/max(alt_factor)).^P;
-mp_factor = (mp_factor./max(mp_factor)).^P;
-maxQ_factor = (maxQ_factor./max(maxQ_factor)).^P;
-% L_D_factor = (L_D_factor ./ max(L_D_factor)).^4;
+% P = 3;
+% tb_factor = (tb_factor./max(tb_factor)).^P;
+% mpl_factor = (mpl_factor./max(mpl_factor)).^P;
+% alt_factor = (alt_factor/max(alt_factor)).^P;
+% mp_factor = (mp_factor./max(mp_factor)).^P;
+% maxQ_factor = (maxQ_factor./max(maxQ_factor)).^P;
+% % L_D_factor = (L_D_factor ./ max(L_D_factor)).^4;
 
 %% Weights
 
 % Weight 1
-f1 = .2;
-f2 = .05;
-f3 = .5;
-f4 = .4;
-f5 = .4;
-f6 = .45;
+% f1 = .2;
+% f2 = .05;
+% f3 = .5;
+% f4 = .4;
+% f5 = .4;
+% f6 = .45;
 
 % Weight 2
-% f1 = .1;
-% f2 = .05;
-% f3 = .65;
-% f4 = .6;
-% f5 = .3;
-% f6 = .3;
+f1 = .125;
+f2 = .05;
+f3 = .65;
+f4 = .6;
+f5 = .275;
+f6 = .3;
 
 %% Value and Cost
 

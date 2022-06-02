@@ -25,17 +25,17 @@ w = 0;
 output_vars = {'Combination','Propellant Mass [kg]','Inert Mass [kg]',...
     'Total Mass [kg] (including payload)','First Stage Burn Time [sec]',...
     'Second Stage Burn Time [sec]','Maximum Dynamic Pressure (Max Q) [kPa]',...
-    'Delta V [km/s]','Payload Mass (kg)','Alt [km]','Diameter 1','Diameter 2'};
+    'Delta V [km/s]','Payload Mass (kg)','Alt [km]','Diameter 1','Diameter 2','Value','Cost','Score'};
 
 
 out_table = array2table(zeros(1,length(output_vars)), 'VariableNames',output_vars);
 row = 1;
 col1 = 1;
-col2 = 12;
+col2 = 15;
 RangeVariable1 = xlsAddr(row,col1);
 RangeVariable2 = xlsAddr(row,col2);
 RangeVariable = [RangeVariable1,':',RangeVariable2];
-writetable(out_table,'ARM.xls','Range',RangeVariable);
+writetable(out_table,'ARM_Metrics.xls','Range',RangeVariable);
 import_combo = readmatrix("Design Matrix - Praeto.csv",'Range', 'A2:A127','OutputType','string');
 import_dv = readmatrix("Design Matrix - Praeto.csv", 'Range', 'H2:H127');
 
@@ -339,17 +339,22 @@ identif = str2double(append(mpl_ref, dia1_ref, dia2_ref, altitude_ref));
 output_vec = {identif, (mp{j}(1)+mp2{j}(1)),(mi(end)+mi2(end)), mo(end), ...
     tb(end), tb2(end), max(Q{j})/1000, tot_dv_mission(end), mpl, desired_alt, diameter1, diameter2};
 
+[~,Value,Cost] = Pareto_Selection(output_vec);
+score = Value - Cost;
+
+output_vec = {identif, (mp{j}(1)+mp2{j}(1)),(mi(end)+mi2(end)), mo(end), ...
+    tb(end), tb2(end), max(Q{j})/1000, tot_dv_mission(end), mpl, desired_alt, diameter1, diameter2,Value,Cost, score};
+
 out_table = array2table(output_vec);
 row = iter+1;
 col1 = 1;
-col2 = 12;
+col2 = 15;
 RangeVariable1 = xlsAddr(row,col1);
 RangeVariable2 = xlsAddr(row,col2);
 RangeVariable = [RangeVariable1,':',RangeVariable2];
-writematrix(cell2mat(output_vec),'ARM.xls','Range',RangeVariable);
+writematrix(cell2mat(output_vec),'ARM_Metrics.xls','Range',RangeVariable);
 
-[~,Value,Cost] = Pareto_Selection(output_vec);
-score = Value - Cost;
+
 hold off
 %     figure(2)
 %     plot(t{j},height{j})

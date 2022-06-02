@@ -4,12 +4,12 @@ classdef XChamberPressureProfile < GeneticTrial
 %   using a genetic algorithm. Curves are interpolated between a given
 %   number of "Key Points"
     properties
-        maxPressure = 1500          % maximum chamber pressure
+        maxPressure = 1750          % maximum chamber pressure
         minStartPercentage = 0.2    % minimum starting % of maxPressure 
         maxStartPercentage = 0.8    % maximum starting % of maxPressure    
-        maxPeakRatio = 0.8;         % max height of subsequent peaks
+        maxPeakRatio = 0.85;         % max height of subsequent peaks
         xShiftConstant = 0.1;       % +/- allowed shift to next key point in xShift
-        yShiftConstant = 0.2;       % +/- percent range for yShift mutation
+        yShiftConstant = 0.33;       % +/- percent range for yShift mutation
         yIsInt = true;              % forces pressure to be rounded ints (is faster)
         showKeyPoints = false       % displays key points when showPlot() is called
         
