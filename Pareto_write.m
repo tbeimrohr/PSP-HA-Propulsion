@@ -31,10 +31,10 @@ payload = [-1, -2, -3];
 D_1 = [-4, -5, -6];
 D_2 = [-7, -8];
 alt = [-9, 10, 11];
-dv_1 = [12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22];
-coast_lim = [23, 24, 25, 26, 27];
+%dv_1 = [12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22];
+%coast_lim = [23, 24, 25, 26, 27];
 
-x = (combvec(payload, D_1, D_2, alt, dv_1, coast_lim));
+x = (combvec(payload, D_1, D_2, alt);% dv_1, coast_lim));
 
 %% For exporting with zeroes %%
 % for r = 1:length(x(1,:))
