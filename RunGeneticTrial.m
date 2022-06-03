@@ -9,7 +9,7 @@
 % Author(s):
 % Thomas Beimrohr
 % Jeff Kaji
-%
+% Justin Kruse
 % Description:
 % During the Pareto selection process, the need for an adaptable system
 % that could test a set list of design parameter combinations was needed.
