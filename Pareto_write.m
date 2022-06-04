@@ -36,7 +36,7 @@ alt = [-9, 10, 11]; %Codes for desired altitude
 %dv_1 = [12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22]; %Codes for dv % split for stage 1
 %coast_lim = [23, 24, 25, 26, 27]; %Codes for coasting upper limit
 
-x = (combvec(payload, D_1, D_2, alt);% dv_1, coast_lim)); % get all possible pareto combinations
+x = (combvec(payload, D_1, D_2, alt));% dv_1, coast_lim)); % get all possible pareto combinations
 
 
 writematrix(x, 'combos.txt') %write to file
