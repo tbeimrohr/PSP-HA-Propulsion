@@ -145,19 +145,27 @@ desired_coastlim = coastlim_code{2}(find(strcmp(coastlim_ref, coastlim_code{1}) 
 if desired_deltaV == .3
     shift = -.5;
 elseif desired_deltaV == .4
-    shift = .2
+    shift = .2;
 elseif desired_deltaV == .5
-    shift = .7
+    shift = .7;
 elseif desired_deltaV == .6
-    shift = 1
+    shift = 1;
 elseif desired_deltaV == .7
-    shift = 1.2
+    shift = 1.2;
 end
 
 if mpl == 1
     dv_change = 5 + shift;
 elseif mpl == 5
     dv_change = 3.5 + shift;
+end
+
+if exist("ARM_Metrics.xls")
+    range = append('H',num2str(iter+1),':','H',num2str(iter+1));
+    import_dv = readmatrix("ARM_Metrics.xls", 'Range',range);
+    if ~isnan(import_dv)
+        dv_change = import_dv;
+    end
 end
 
 dif_alt = 2;

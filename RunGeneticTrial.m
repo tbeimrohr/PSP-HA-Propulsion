@@ -42,12 +42,35 @@ pc_graph = [1000 975 980 990 995 985 925 875 810 785 735 690 680 655 650 625 625
 pc_graph2 = [600 650 675 700 710 715 720 725 730 735 740 745 750 750 750 750 750 750 750 750 600 100 10 0]; %chamber pressure history in psi
 rng(5)
 numBest = 1; % Take best n number of profiles from each generation
-numGens = 5; % Generations to run for
+numGens = 7; % Generations to run for
 Pareto_write()
 import_combo = fileread("combos.txt");
 
-for i = 1:2%length(import_combo)
+for i = 1:length(import_combo)
     ID = import_combo((1 + (15*(i-1))) - (i - 1):(12 + (15*(i-1))) - (i - 1));
     b = run(ID,numBest,numGens,curve1=pc_graph,curve2=pc_graph2,stage=1);
 end
+
+for i = 1:length(import_combo)
+    ID = import_combo((1 + (15*(i-1))) - (i - 1):(12 + (15*(i-1))) - (i - 1));
+    import_pcgraph = importdata("ARM_Profiles.xls");
+    pcgraph_file1 = import_pcgraph.data(2:end);
+    b = run(ID,numBest,numGens,curve1=pcgraph_file1,curve2=pc_graph2,stage=2);
+end
+
+for i = 1:length(import_combo)
+    ID = import_combo((1 + (15*(i-1))) - (i - 1):(12 + (15*(i-1))) - (i - 1));
+    import_pcgraph2 = importdata("ARM_Profiles2.xls");
+    pcgraph_file2 = import_pcgraph2.data(2:end);
+    b = run(ID,numBest,numGens,curve1=pcgraph_file1,curve2=pcgraph_file2,stage=1);
+end
+
+for i = 1:length(import_combo)
+    ID = import_combo((1 + (15*(i-1))) - (i - 1):(12 + (15*(i-1))) - (i - 1));
+    import_pcgraph = importdata("ARM_Profiles.xls");
+    pcgraph_file1 = import_pcgraph.data(2:end);
+    b = run(ID,numBest,numGens,curve1=pcgraph_file1,curve2=pcgraph_file2,stage=2);
+end
+
+
 toc
