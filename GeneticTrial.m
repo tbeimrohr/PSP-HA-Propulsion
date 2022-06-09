@@ -143,7 +143,7 @@ classdef (Abstract) GeneticTrial
         end
 
         function obj = setupTrial(obj,evalFun)
-             persistent trialID
+            persistent trialID
             if isempty(trialID)
                 trialID = 0;
             else

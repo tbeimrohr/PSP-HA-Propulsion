@@ -9,7 +9,6 @@
 % Author(s):
 % Thomas Beimrohr
 % Jeff Kaji
-% Justin Kruse
 %
 % Description:
 % During the Pareto selection process, the need for an adaptable system
@@ -39,19 +38,16 @@
 clear
 clc
 tic
-pc_graph = [1000 975 980 990 995 985 925 875 810 785 735 690 680 655 650 625 625 650 650 400 375 250 10 0].*1.25; %chamber pressure history in psi
-pc_graph2 = [600 650 675 700 710 715 720 725 730 735 740 745 750 750 750 750 750 750 750 750 600 100 10 0].*1.25; %chamber pressure history in psi
+pc_graph = [1000 975 980 990 995 985 925 875 810 785 735 690 680 655 650 625 625 650 650 400 375 250 10 0]; %chamber pressure history in psi
+pc_graph2 = [600 650 675 700 710 715 720 725 730 735 740 745 750 750 750 750 750 750 750 750 600 100 10 0]; %chamber pressure history in psi
 rng(5)
-id = 1; % Combonation id sequencial order
 numBest = 1; % Take best n number of profiles from each generation
-numGens = 1; % Generations to run for
+numGens = 5; % Generations to run for
+Pareto_write()
+import_combo = fileread("combos.txt");
 
-%import_combo = readmatrix("Design Matrix - Praeto.csv",'Range', 'A2:A127','OutputType','string');
-Pareto_write
-a = string(load('combos.txt'));
-import_combo = replace(a, '-', '0');
-
-for i = 1:length(import_combo)
-    b = run(i,numBest,numGens,curve1=pc_graph,curve2=pc_graph2,stage=1);
+for i = 1:2%length(import_combo)
+    ID = import_combo((1 + (15*(i-1))) - (i - 1):(12 + (15*(i-1))) - (i - 1));
+    b = run(ID,numBest,numGens,curve1=pc_graph,curve2=pc_graph2,stage=1);
 end
 toc

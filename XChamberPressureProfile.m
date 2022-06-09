@@ -554,6 +554,7 @@ classdef XChamberPressureProfile < GeneticTrial
         end
         
         function showPlot(obj,lineWidth,opacity)
+
             if nargin < 2
                 lineWidth = ones(size(obj)); 
             end
