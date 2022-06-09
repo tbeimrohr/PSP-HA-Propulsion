@@ -46,26 +46,26 @@ numGens = 7; % Generations to run for
 Pareto_write()
 import_combo = fileread("combos.txt");
 
-for i = 1:length(import_combo)
+for i = 1:(length(import_combo)/14)
     ID = import_combo((1 + (15*(i-1))) - (i - 1):(12 + (15*(i-1))) - (i - 1));
     b = run(ID,numBest,numGens,curve1=pc_graph,curve2=pc_graph2,stage=1);
 end
 
-for i = 1:length(import_combo)
+for i = 1:(length(import_combo)/14)
     ID = import_combo((1 + (15*(i-1))) - (i - 1):(12 + (15*(i-1))) - (i - 1));
     import_pcgraph = importdata("ARM_Profiles.xls");
     pcgraph_file1 = import_pcgraph.data(2:end);
     b = run(ID,numBest,numGens,curve1=pcgraph_file1,curve2=pc_graph2,stage=2);
 end
 
-for i = 1:length(import_combo)
+for i = 1:(length(import_combo)/14)
     ID = import_combo((1 + (15*(i-1))) - (i - 1):(12 + (15*(i-1))) - (i - 1));
     import_pcgraph2 = importdata("ARM_Profiles2.xls");
     pcgraph_file2 = import_pcgraph2.data(2:end);
     b = run(ID,numBest,numGens,curve1=pcgraph_file1,curve2=pcgraph_file2,stage=1);
 end
 
-for i = 1:length(import_combo)
+for i = 1:(length(import_combo)/14)
     ID = import_combo((1 + (15*(i-1))) - (i - 1):(12 + (15*(i-1))) - (i - 1));
     import_pcgraph = importdata("ARM_Profiles.xls");
     pcgraph_file1 = import_pcgraph.data(2:end);
