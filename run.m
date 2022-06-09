@@ -74,22 +74,22 @@ end
 
 
 if length(options.stage) == 1
-%     ID = best.genNum + 1;
-choice = best(1,1);
-if length(best) > 1
-    for n = 1:numBest
-        score(n) = best(1,n).score;
+    %     ID = best.genNum + 1;
+    choice = best(1,1);
+    if length(best) > 1
+        for n = 1:numBest
+            score(n) = best(1,n).score;
+        end
+        select = find(score == max(score));
+        choice = best(1,select);
     end
-    select = find(score == max(score));
-    choice = best(1,select);
-end
     lastnum = 0;
-%     if id > 1
-%         lastnum = str2double(readmatrix("ARM_Profiles.xls","Range","B2:B127","OutputType","string"));
-%         lastnum_blankindex = isnan(lastnum);
-%         lastnum(lastnum_blankindex) = [];
-%         lastnum = lastnum(end);
-%     end
+    %     if id > 1
+    %         lastnum = str2double(readmatrix("ARM_Profiles.xls","Range","B2:B127","OutputType","string"));
+    %         lastnum_blankindex = isnan(lastnum);
+    %         lastnum(lastnum_blankindex) = [];
+    %         lastnum = lastnum(end);
+    %     end
     output_vars = {string(1:length(choice.coords))};
     output_vars2 = {'First Stage Chamber Pressure Profile'};
 
@@ -107,11 +107,14 @@ end
     end
     writetable(out_table,name,'Range',RangeVariable);
 
-    import_combo = str2double(readmatrix("Design Matrix - Pareto.csv","Range","A2:A127","OutputType","string"));
+    %     import_combo = str2double(readmatrix("Design Matrix - Pareto.csv","Range","A2:A127","OutputType","string"));
 
-    output_vec = [import_combo(id),choice.coords];
+    output_vec = [str2num(id),choice.coords];
     out_table = array2table(output_vec);
-    row = id + 1;
+    import_combo = fileread("combos.txt");
+    temporary = convertCharsToStrings(import_combo);
+    iter = (strfind(temporary,id)-1)/14 + 1;
+    row = iter + 1;
     col1 = 1;
     col2 = 25;
     RangeVariable1 = xlsAddr(row,col1);
@@ -121,12 +124,12 @@ end
 else
     ID = best.genNum + 1;
     lastnum = 0;
-%     if id > 1
-%         lastnum = str2double(readmatrix("ARM_Profiles.xls","Range","B2:B127","OutputType","string"));
-%         lastnum_blankindex = isnan(lastnum);
-%         lastnum(lastnum_blankindex) = [];
-%         lastnum = lastnum(end);
-%     end
+    %     if id > 1
+    %         lastnum = str2double(readmatrix("ARM_Profiles.xls","Range","B2:B127","OutputType","string"));
+    %         lastnum_blankindex = isnan(lastnum);
+    %         lastnum(lastnum_blankindex) = [];
+    %         lastnum = lastnum(end);
+    %     end
     output_vars = {string(1:length(best.coords))};
     output_vars2 = {'First Stage Chamber Pressure Profile'};
 
@@ -139,7 +142,7 @@ else
     RangeVariable = [RangeVariable1,':',RangeVariable2];
     writetable(out_table,'ARM_Profiles.xls','Range',RangeVariable);
 
-    import_combo = str2double(readmatrix("Design Matrix - Praeto.csv","Range","A2:A127","OutputType","string"));
+%     import_combo = str2double(readmatrix("Design Matrix - Praeto.csv","Range","A2:A127","OutputType","string"));
 
     output_vec = [import_combo(id),best.coords];
     out_table = array2table(output_vec);
@@ -154,12 +157,12 @@ else
     %%
     ID = best2.genNum + 1;
     lastnum = 0;
-%     if id > 1
-%         lastnum = str2double(readmatrix("ARM_Profiles2.xls","Range","B2:B127","OutputType","string"));
-%         lastnum_blankindex = isnan(lastnum);
-%         lastnum(lastnum_blankindex) = [];
-%         lastnum = lastnum(end);
-%     end
+    %     if id > 1
+    %         lastnum = str2double(readmatrix("ARM_Profiles2.xls","Range","B2:B127","OutputType","string"));
+    %         lastnum_blankindex = isnan(lastnum);
+    %         lastnum(lastnum_blankindex) = [];
+    %         lastnum = lastnum(end);
+    %     end
     output_vars = {string(1:length(best2.coords))};
     output_vars2 = {'Second Stage Chamber Pressure Profile'};
 
