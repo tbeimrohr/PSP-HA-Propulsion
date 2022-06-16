@@ -25,9 +25,9 @@
 %
 % Outputs:
 % (required) ARM_Metrics.csv = .csv file with key information: Combination ID
-% Propellant Mass [kg]	Inert Mass [kg]	Total Mass [kg] (including payload)	
-% First Stage Burn Time [sec]	Second Stage Burn Time [sec]	
-% Maximum Dynamic Pressure (Max Q) [kPa]	Delta V [km/s]	
+% Propellant Mass [kg]	Inert Mass [kg]	Total Mass [kg] (including payload)
+% First Stage Burn Time [sec]	Second Stage Burn Time [sec]
+% Maximum Dynamic Pressure (Max Q) [kPa]	Delta V [km/s]
 % Payload Mass (kg)	Alt [km]	Diameter 1	Diameter 2
 %
 %
@@ -42,34 +42,40 @@ pc_graph = [1000 975 980 990 995 985 925 875 810 785 735 690 680 655 650 625 625
 pc_graph2 = [600 650 675 700 710 715 720 725 730 735 740 745 750 750 750 750 750 750 750 750 600 100 10 0]; %chamber pressure history in psi
 rng(5)
 numBest = 1; % Take best n number of profiles from each generation
-numGens = 7; % Generations to run for
+numGens = 1; % Generations to run for
+numRepeat = 5;
 Pareto_write()
 import_combo = fileread("combos.txt");
 
-for i = 1:(length(import_combo)/14)
+if exist("ARM_Metrics_temp.xls")
+    delete("ARM_Metrics_temp.xls");
+end
+if exist("ARM_Profiles_temp.xls")
+    delete("ARM_Profiles_temp.xls")
+end
+
+stop = (length(import_combo)/14);
+stop1 = 1;
+for i = 2:stop
+    tic
     ID = import_combo((1 + (15*(i-1))) - (i - 1):(12 + (15*(i-1))) - (i - 1));
     b = run(ID,numBest,numGens,curve1=pc_graph,curve2=pc_graph2,stage=1);
-end
 
-for i = 1:(length(import_combo)/14)
-    ID = import_combo((1 + (15*(i-1))) - (i - 1):(12 + (15*(i-1))) - (i - 1));
     import_pcgraph = importdata("ARM_Profiles.xls");
-    pcgraph_file1 = import_pcgraph.data(2:end);
-    b = run(ID,numBest,numGens,curve1=pcgraph_file1,curve2=pc_graph2,stage=2);
-end
+    pcgraph_file1 = import_pcgraph.data(i,2:end);
+    b2 = run(ID,numBest,numGens,curve1=pcgraph_file1,curve2=pc_graph2,stage=2);
 
-for i = 1:(length(import_combo)/14)
-    ID = import_combo((1 + (15*(i-1))) - (i - 1):(12 + (15*(i-1))) - (i - 1));
-    import_pcgraph2 = importdata("ARM_Profiles2.xls");
-    pcgraph_file2 = import_pcgraph2.data(2:end);
-    b = run(ID,numBest,numGens,curve1=pcgraph_file1,curve2=pcgraph_file2,stage=1);
-end
+    numGens = 2;
+    for j = 1:numRepeat
+        import_pcgraph2 = importdata("ARM_Profiles2.xls");
+        pcgraph_file2 = import_pcgraph2.data(i,2:end);
+        b3 = run(ID,numBest,numGens,curve1=pcgraph_file1,curve2=pcgraph_file2,stage=1);
 
-for i = 1:(length(import_combo)/14)
-    ID = import_combo((1 + (15*(i-1))) - (i - 1):(12 + (15*(i-1))) - (i - 1));
-    import_pcgraph = importdata("ARM_Profiles.xls");
-    pcgraph_file1 = import_pcgraph.data(2:end);
-    b = run(ID,numBest,numGens,curve1=pcgraph_file1,curve2=pcgraph_file2,stage=2);
+        import_pcgraph = importdata("ARM_Profiles.xls");
+        pcgraph_file1 = import_pcgraph.data(i,2:end);
+        b4 = run(ID,numBest,numGens,curve1=pcgraph_file1,curve2=pcgraph_file2,stage=2);
+    end
+    toc
 end
 
 

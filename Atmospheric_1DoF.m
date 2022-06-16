@@ -95,17 +95,17 @@ w = 0;
 output_vars = {'Combination','Propellant Mass [kg]','Inert Mass [kg]',...
     'Total Mass [kg] (including payload)','First Stage Burn Time [sec]',...
     'Second Stage Burn Time [sec]','Maximum Dynamic Pressure (Max Q) [kPa]',...
-    'Delta V [km/s]','Payload Mass (kg)','Alt [km]','Diameter 1','Diameter 2','Delta V Split for 1st Stage','Coast limit','Value','Cost','Score'};
+    'Delta V [km/s]','Payload Mass (kg)','Alt [km]','Diameter 1','Diameter 2','Delta V Split for 1st Stage','Coast limit','Value','Cost','Score','Profile'};
 
 
 out_table = array2table(zeros(1,length(output_vars)), 'VariableNames',output_vars);
 row = 1;
 col1 = 1;
-col2 = 17;
+col2 = 18;
 RangeVariable1 = xlsAddr(row,col1);
 RangeVariable2 = xlsAddr(row,col2);
 RangeVariable = [RangeVariable1,':',RangeVariable2];
-writetable(out_table,'ARM_Metrics.xls','Range',RangeVariable);
+writetable(out_table,'ARM_Metrics_temp.xls','Range',RangeVariable);
 % import_dv = readmatrix("Design Matrix - Pareto.csv", 'Range', 'H2:H127');
 
 
@@ -123,6 +123,21 @@ altitude_ref = combo(7:8); %km
 deltaV_ref = combo(9:10); %km/s
 coastlim_ref = combo(11:12); %km
 
+ 
+if isempty(cpp1.genNum)
+    generation = cpp2.genNum;
+    totalProfiles = cpp2.allProfiles;
+    profileNum = cpp2.profile;
+    stageNum = 2;
+    graph = cpp2.coords;
+else
+    generation = cpp1.genNum;
+    totalProfiles = cpp1.allProfiles;
+    profileNum = cpp1.profile;
+    stageNum = 1;
+    graph = cpp1.coords;
+end
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%5
 
@@ -131,8 +146,8 @@ mpl_code = {{'01' '02' '03'} [1 5 10]};
 dia1_code = {{'04' '05' '06'} [4 4.5 5]};
 dia2_code = {{'07' '08' '09'}, [3.5 4 4.5]};
 altitude_code = {{'10' '11' '12'}, [100 125 150]};
-deltaV_code = {{'13' '14' '15' '16' '17'}, [.3 .4 .5 .6 .7]};
-coastlim_code = {{'18' '19' '20' '21' '22'}, [0 20 22.5 25 27.5]};
+deltaV_code = {{'13' '14' '15'}, [.35 .5 .65]};
+coastlim_code = {{'16' '17' '18'}, [0 20 25]};
 
 mpl = mpl_code{2}(find(strcmp(mpl_ref, mpl_code{1}) == 1));
 diameter1 = dia1_code{2}(find(strcmp(dia1_ref, dia1_code{1}) == 1));
@@ -142,16 +157,12 @@ desired_deltaV = deltaV_code{2}(find(strcmp(deltaV_ref, deltaV_code{1}) == 1));
 desired_coastlim = coastlim_code{2}(find(strcmp(coastlim_ref, coastlim_code{1}) == 1));
 
 %% Model
-if desired_deltaV == .3
-    shift = -.5;
-elseif desired_deltaV == .4
-    shift = .2;
+if desired_deltaV == .35
+    shift = .02;
 elseif desired_deltaV == .5
     shift = .7;
-elseif desired_deltaV == .6
-    shift = 1;
-elseif desired_deltaV == .7
-    shift = 1.2;
+elseif desired_deltaV == .65
+    shift = 1.1;
 end
 
 if mpl == 1
@@ -160,13 +171,19 @@ elseif mpl == 5
     dv_change = 3.5 + shift;
 end
 
-if exist("ARM_Metrics.xls")
-    range = append('H',num2str(iter+1),':','H',num2str(iter+1));
-    import_dv = readmatrix("ARM_Metrics.xls", 'Range',range);
-    if ~isnan(import_dv)
-        dv_change = import_dv;
+if exist("ARM_Metrics_temp.xls")
+    range = append('H',num2str(2),':','H',num2str(2));
+    import_dv = readmatrix("ARM_Metrics_temp.xls", 'Range',range);
+    flip_dvsign = 1;
+    if ~isnan(import_dv) && exist("ARM_Profiles_temp.xls")
+        profiles = readmatrix('ARM_Profiles_temp.xls');
+        baseProf = profiles(1,:);
+        dv_shift_cum = cumsum(graph-baseProf);
+        dv_shift = dv_shift_cum(end)/50000;
+        dv_change = import_dv + flip_dvsign*dv_shift;
     end
 end
+
 
 dif_alt = 2;
 alt_tol = .01;
@@ -211,7 +228,7 @@ while (abs(dif_alt - 1) > alt_tol) & check & go
     lam2 = .785; %propellant mass fraction of stage 2
 
 
-    Isp = [280].*.9; %sec
+    Isp = [280].*.95; %sec
     g = 9.81; %m/s2
     tot_dv_mission(j) = [dv_change]; %km/s
     scale1 = desired_deltaV; %the amount of delta v percentage the first stage will carry
@@ -282,7 +299,9 @@ while (abs(dif_alt - 1) > alt_tol) & check & go
     if go
         clc
         fprintf('Combination %d...\n',iter)
-        fprintf('Generation %d...\n',cpp1.genNum)
+        fprintf('Stage %d...\n',stageNum)
+        fprintf('Generation %d...\n',generation)
+        fprintf('Profile %d out of %d...\n',profileNum,totalProfiles)
         fprintf('Iteration %d...\n',w)
         fprintf('First Stage Burn...\n')
         for i = 1:length(time{j})
@@ -448,15 +467,15 @@ while (abs(dif_alt - 1) > alt_tol) & check & go
     elseif dif_alt >= 2 && dif_alt < 5
         skip = 2.25;
     elseif dif_alt > 1.25 && dif_alt < 2
-        skip = 1.1;
+        skip = 1.25;
     else
         skip = 1;
     end
 
     if dif_alt < .3
         skip = 2.25;
-    elseif dif_alt < .75 && dif_alt >= .3
-        skip = 1.85;
+    elseif dif_alt < .8 && dif_alt >= .3
+        skip = 1.25;
     end
 
     if j > 1 && sign_check(j) ~= sign_check(j-1)
@@ -481,30 +500,7 @@ while (abs(dif_alt - 1) > alt_tol) & check & go
             break
         end
     else
-        if j > 1
-            if flipcount == 1
-                dv_change = dv_change + skip*(.1/(o^2))*((1-dif_alt)/dif_alt) + flipdv*(o)*(dv_change-tot_dv_mission(j-1))/3 ;
-            else
-                dv_change = ((((dv_change + skip*(.1/(o^2))*((1-dif_alt)/dif_alt) + flipdv*(dv_change-tot_dv_mission(j-1))/3) +  tot_dv_mission(closer_index))/2) + (dv_change + skip*(.1/(o^2))*((1-dif_alt)/dif_alt) + flipdv*(dv_change-tot_dv_mission(j-1))/3))/2;
-                flipcount = 1;
-            end
-            if sign_check(j-1) ~= sign_check(j)
-                flipcount = flipcount + 1;
-%                 flipdv = -1*flipdv;
-                closer_index = find(abs(tracker(j-1:j)-1) == min(abs(tracker(j-1:j)-1)));
-                if closer_index == 2
-                    closer_index = j;
-                else
-                    closer_index = j-1;
-                end
-                dv_change = (((((tot_dv_mission(j-1) + tot_dv_mission(j))/2) + tot_dv_mission(closer_index))/2) + tot_dv_mission(closer_index))/2;
-            end
-            if o == 1 && abs(tot_dv_mission(j)-tot_dv_mission(j-1)) < .2
-                dv_change = dv_change + sign(tot_dv_mission(j)-tot_dv_mission(j-1))*.1;
-            end
-        else
-            dv_change = dv_change + skip*(.1/(o^2))*((1-dif_alt)/dif_alt);
-        end
+        dv_change = dv_change + skip*(.1/(o^2))*((1-dif_alt)/dif_alt)
     end
 
 
@@ -519,18 +515,27 @@ output_vec = {identif, (mp{j}(1)+mp2{j}(1)),(mi(end)+mi2(end)), mo(end), ...
 score = Value - Cost;
 
 output_vec = {identif, (mp{j}(1)+mp2{j}(1)),(mi(end)+mi2(end)), mo(end), ...
-    tb(end), tb2(end), max(Q{j})/1000, tot_dv_mission(end), mpl, desired_alt, diameter1, diameter2,desired_deltaV,desired_coastlim,Value,Cost, score};
+    tb(end), tb2(end), max(Q{j})/1000, tot_dv_mission(end), mpl, desired_alt, diameter1, diameter2,desired_deltaV,desired_coastlim,Value,Cost, score, profileNum};
 if skip == -1
     output_vec = {identif,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
 end
-out_table = array2table(output_vec);
-row = iter+1;
+
+row = profileNum;
 col1 = 1;
-col2 = 17;
+col2 = 24;
 RangeVariable1 = xlsAddr(row,col1);
 RangeVariable2 = xlsAddr(row,col2);
 RangeVariable = [RangeVariable1,':',RangeVariable2];
-writematrix(cell2mat(output_vec),'ARM_Metrics.xls','Range',RangeVariable);
+writematrix(graph,'ARM_Profiles_temp.xls','Range',RangeVariable)
+
+out_table = array2table(output_vec);
+row = profileNum+1;
+col1 = 1;
+col2 = 18;
+RangeVariable1 = xlsAddr(row,col1);
+RangeVariable2 = xlsAddr(row,col2);
+RangeVariable = [RangeVariable1,':',RangeVariable2];
+writematrix(cell2mat(output_vec),'ARM_Metrics_temp.xls','Range',RangeVariable);
 
 
 hold off

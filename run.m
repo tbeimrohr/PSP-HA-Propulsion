@@ -60,7 +60,7 @@ end
 
 if options.stage == 1
     ef  = @(cpp) evalFun(cpp,xcpp2,id);
-    [best,~] = xcpp1.Trial(ef,mf,numBest,numGens,pf);
+    [best] = xcpp1.Trial(ef,mf,numBest,numGens,pf);
 elseif options.stage == 2
     ef = @(cpp) evalFun(xcpp1,cpp,id);
     [best,~] = xcpp2.Trial(ef,mf,numBest,numGens,pf);
@@ -74,8 +74,46 @@ end
 
 
 if length(options.stage) == 1
-    %     ID = best.genNum + 1;
+%% metrics
+
     choice = best(1,1);
+    import_combo = fileread("combos.txt");
+    temporary = convertCharsToStrings(import_combo);
+    iter = (strfind(temporary,id)-1)/14 + 1;
+
+output_vars = {'Combination','Propellant Mass [kg]','Inert Mass [kg]',...
+    'Total Mass [kg] (including payload)','First Stage Burn Time [sec]',...
+    'Second Stage Burn Time [sec]','Maximum Dynamic Pressure (Max Q) [kPa]',...
+    'Delta V [km/s]','Payload Mass (kg)','Alt [km]','Diameter 1','Diameter 2','Delta V Split for 1st Stage','Coast limit','Value','Cost','Score'};
+
+
+out_table = array2table(zeros(1,length(output_vars)), 'VariableNames',output_vars);
+row = 1;
+col1 = 1;
+col2 = 17;
+RangeVariable1 = xlsAddr(row,col1);
+RangeVariable2 = xlsAddr(row,col2);
+RangeVariable = [RangeVariable1,':',RangeVariable2];
+writetable(out_table,'ARM_Metrics.xls','Range',RangeVariable);
+
+output_vec = readmatrix("ARM_Metrics_temp.xls");
+choice_profile = find(output_vec(:,17) == best(1,1).score);
+choice_metrics = output_vec(choice_profile,1:17);
+
+row = iter+1;
+col1 = 1;
+col2 = 17;
+RangeVariable1 = xlsAddr(row,col1);
+RangeVariable2 = xlsAddr(row,col2);
+RangeVariable = [RangeVariable1,':',RangeVariable2];
+writematrix(choice_metrics,'ARM_Metrics.xls','Range',RangeVariable);
+
+delete('ARM_Metrics_temp.xls')
+
+%% profiles
+
+    %     ID = best.genNum + 1;
+
     if length(best) > 1
         for n = 1:numBest
             score(n) = best(1,n).score;
@@ -83,7 +121,7 @@ if length(options.stage) == 1
         select = find(score == max(score));
         choice = best(1,select);
     end
-    lastnum = 0;
+%     lastnum = 0;
     %     if id > 1
     %         lastnum = str2double(readmatrix("ARM_Profiles.xls","Range","B2:B127","OutputType","string"));
     %         lastnum_blankindex = isnan(lastnum);
@@ -91,7 +129,7 @@ if length(options.stage) == 1
     %         lastnum = lastnum(end);
     %     end
     output_vars = {string(1:length(choice.coords))};
-    output_vars2 = {'First Stage Chamber Pressure Profile'};
+%     output_vars2 = {'First Stage Chamber Pressure Profile'};
 
     out_table = array2table(zeros(1,length(output_vars{1,:})+1),'VariableNames',['Combination',output_vars{1,:}]);
     row = 1;
@@ -111,9 +149,7 @@ if length(options.stage) == 1
 
     output_vec = [str2num(id),choice.coords];
     out_table = array2table(output_vec);
-    import_combo = fileread("combos.txt");
-    temporary = convertCharsToStrings(import_combo);
-    iter = (strfind(temporary,id)-1)/14 + 1;
+    
     row = iter + 1;
     col1 = 1;
     col2 = 25;
@@ -121,6 +157,7 @@ if length(options.stage) == 1
     RangeVariable2 = xlsAddr(row,col2);
     RangeVariable = [RangeVariable1,':',RangeVariable2];
     writematrix(output_vec,name,'Range',RangeVariable);
+    delete('ARM_Profiles_temp.xls')
 else
     ID = best.genNum + 1;
     lastnum = 0;
@@ -191,12 +228,13 @@ end
 
 
 function out = mutateFun(cpp)
-out = cpp + cpp.nudge().yShiftKeyPoints().xShiftKeyPoints().changeKeyPointsNum().reinterpolateCoords();
-out = out + cpp.yShiftKeyPoints().reinterpolateCoords();
-out = out + cpp.xShiftKeyPoints().reinterpolateCoords();
+out = cpp + cpp.nudge().yShiftKeyPoints().xShiftKeyPoints().changeKeyPointsNum().reinterpolateCoords().reinterpolateCoords();
+out = out + cpp.yShiftKeyPoints().changeKeyPointsNum().reinterpolateCoords().reinterpolateCoords().reinterpolateCoords();
+out = out + cpp.nudge().nudge().xShiftKeyPoints().changeKeyPointsNum().reinterpolateCoords();
+out = out + cpp.nudge().changeKeyPointsNum().reinterpolateCoords();
+out = out + cpp.nudge().yShiftKeyPoints().yShiftKeyPoints().xShiftKeyPoints().changeKeyPointsNum().reinterpolateCoords();
+out = out + cpp.nudge().xShiftKeyPoints().changeKeyPointsNum();
 out = out + cpp.changeKeyPointsNum().reinterpolateCoords();
-out = out + cpp.nudge().changeKeyPointsNum();
-out = out + cpp.reinterpolateCoords().reinterpolateCoords().reinterpolateCoords();
 end
 
 
@@ -214,13 +252,13 @@ runCount = XChamberPressureProfile.runCounter(best);
 title(sprintf("Generation n = %d, Total Runs:%d",genNum,runCount))
 legendText = [];
 for n = 1:numel(best)
-    legendText = [legendText,sprintf("Score = %.6f",best(n).score)];
+    legendText = [legendText,sprintf("Score = %.3f",best(n).score)];
 end
 
 for n = 1:numel(rest)
-    legendText = [legendText,sprintf("Score = %.6f",rest(n).score)];
+    legendText = [legendText,sprintf("Score = %.3f",rest(n).score)];
 end
 
-legend(legendText)
+legend(legendText,'location','best')
 drawnow();
 end

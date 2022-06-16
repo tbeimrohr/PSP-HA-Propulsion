@@ -5,6 +5,8 @@ classdef (Abstract) GeneticTrial
         trialID
         birthGeneration
         scoreFunction
+        profile
+        allProfiles
 %     end
 % 
 %     properties (Hidden)
@@ -77,6 +79,7 @@ classdef (Abstract) GeneticTrial
                 end
                 if isempty(obj(n).score)
                     GeneticTrial.runCounter(obj(n));
+                    obj(n).profile = n;
                     obj(n).score = obj(n).scoreFunction(obj(n));
                 end
             end
@@ -113,8 +116,8 @@ classdef (Abstract) GeneticTrial
                 sortDirection = 'descend';
             end
 
-            [~,sortIdx] = sort(abs(targetScore-scores),sortDirection)
-            sortedScores = scores(sortIdx)
+            [~,sortIdx] = sort(abs(targetScore-scores),sortDirection);
+            sortedScores = scores(sortIdx);
             
 %             if strcmp(sortDirection,'ascend')
                 best = obj(sortIdx(1:numProfiles));
@@ -155,6 +158,8 @@ classdef (Abstract) GeneticTrial
             options.scoreFunction = evalFun;
             options.trialSetup = true;
             options.genNum = 0;
+            options.profile = [];
+            options.allProfiles = numel(obj);
             obj = obj.set(options);
             
             val = GeneticTrial.runCounter(obj,0);
@@ -196,6 +201,27 @@ classdef (Abstract) GeneticTrial
            newGen = obj.setupTrial(evalFun);
 
             for n = 0:numGenerations
+                if n > 0
+                    import_metrics = readmatrix("ARM_Metrics_temp.xls");
+                    select_metrics = import_metrics(find(import_metrics(:,17) == max(import_metrics(:,17))),:);
+                    row = 2;
+                    col1 = 1;
+                    col2 = 18;
+                    RangeVariable1 = xlsAddr(row,col1);
+                    RangeVariable2 = xlsAddr(row,col2);
+                    RangeVariable = [RangeVariable1,':',RangeVariable2];
+                    writematrix(select_metrics,'ARM_Metrics_temp.xls','Range',RangeVariable);
+
+                    import_profiles = readmatrix("ARM_Profiles_temp.xls");
+                    select_profile = import_profiles(find(import_metrics(:,17) == max(import_metrics(:,17))),:);
+                    row = 1;
+                    col1 = 1;
+                    col2 = 24;
+                    RangeVariable1 = xlsAddr(row,col1);
+                    RangeVariable2 = xlsAddr(row,col2);
+                    RangeVariable = [RangeVariable1,':',RangeVariable2];
+                    writematrix(select_profile,'ARM_Profiles_temp.xls','Range',RangeVariable)
+                end
                 [best,rest,newGen] = newGen.TrialGeneration(mutateFun,numBest,plotFun);
             end
 

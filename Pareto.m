@@ -6,7 +6,7 @@ alt_ref = 103.57; %km
 L_D_ref = 19.5;
 mass_tot = 140.614; %kg
 mp_ref = mass_tot*.85;
-maxQ_ref = 288; %kpa
+maxQ_ref = 200; %kpa
 mpl_ref = 10; %kg
 
 %% Constraints
