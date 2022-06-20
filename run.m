@@ -228,13 +228,16 @@ end
 
 
 function out = mutateFun(cpp)
-out = cpp + cpp.nudge().yShiftKeyPoints().xShiftKeyPoints().changeKeyPointsNum().reinterpolateCoords().reinterpolateCoords();
+placeholder = cpp;
+placeholder.coords = smooth(cpp.coords)';
+out = cpp + placeholder;
+out = out + cpp.nudge().yShiftKeyPoints().xShiftKeyPoints().changeKeyPointsNum().reinterpolateCoords().reinterpolateCoords();
 out = out + cpp.yShiftKeyPoints().changeKeyPointsNum().reinterpolateCoords().reinterpolateCoords().reinterpolateCoords();
 out = out + cpp.nudge().nudge().xShiftKeyPoints().changeKeyPointsNum().reinterpolateCoords();
 out = out + cpp.nudge().changeKeyPointsNum().reinterpolateCoords();
 out = out + cpp.nudge().yShiftKeyPoints().yShiftKeyPoints().xShiftKeyPoints().changeKeyPointsNum().reinterpolateCoords();
 out = out + cpp.nudge().xShiftKeyPoints().changeKeyPointsNum();
-out = out + cpp.changeKeyPointsNum().reinterpolateCoords();
+
 end
 
 
