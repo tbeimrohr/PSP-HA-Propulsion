@@ -56,7 +56,7 @@ end
 
 stop = (length(import_combo)/14);
 stop1 = 1;
-for i = 2:stop
+for i = 4:stop
     tic
     ID = import_combo((1 + (15*(i-1))) - (i - 1):(12 + (15*(i-1))) - (i - 1));
     b = run(ID,numBest,numGens,curve1=pc_graph,curve2=pc_graph2,stage=1);
@@ -65,6 +65,7 @@ for i = 2:stop
     pcgraph_file1 = import_pcgraph.data(i,2:end);
     b2 = run(ID,numBest,numGens,curve1=pcgraph_file1,curve2=pc_graph2,stage=2);
 
+   
     numGens = 2;
     for j = 1:numRepeat
         import_pcgraph2 = importdata("ARM_Profiles2.xls");
@@ -74,6 +75,11 @@ for i = 2:stop
         import_pcgraph = importdata("ARM_Profiles.xls");
         pcgraph_file1 = import_pcgraph.data(i,2:end);
         b4 = run(ID,numBest,numGens,curve1=pcgraph_file1,curve2=pcgraph_file2,stage=2);
+
+        if abs((b3.score - b4.score)/b3.score) < .025
+            break
+        end
+
     end
     toc
 end

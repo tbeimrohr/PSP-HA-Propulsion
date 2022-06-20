@@ -1,13 +1,13 @@
 function [tb_factor,mpl_factor,alt_factor,mp_factor,maxQ_factor,L_D_factor] = Pareto(mpl,D1,D2,alt,mp,tb1,tb2,maxQ)
 
 %% Referance Values (USC)
-tb_ref = 14; %sec
+tb_ref = 10; %sec
 alt_ref = 103.57; %km
 L_D_ref = 19.5;
 mass_tot = 140.614; %kg
 mp_ref = mass_tot*.85;
 maxQ_ref = 200; %kpa
-mpl_ref = 10; %kg
+mpl_ref = 5; %kg
 
 %% Constraints
 rho = 0.0686165657; % lbm/in3
