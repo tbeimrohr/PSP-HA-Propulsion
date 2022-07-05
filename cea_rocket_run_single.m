@@ -385,13 +385,13 @@ if ispc()
     
     % Wait until the output file exists
     while exist(cea_output_file, 'file') ~= 2
-        pause(0.1);
+        pause(0.05);
     end
     
     % Wait until FCEA2.exe is done with the output file
     temp = fopen(cea_output_file, 'a+');
     while temp == -1
-        pause(0.01);
+        pause(0.05);
         temp = fopen(cea_output_file, 'a+');
     end
     fclose(temp);
@@ -408,7 +408,7 @@ end
 
 %% Read the output file and return the data
 file_name_out = [file_name(1:length(file_name)-4), '.out'];
-pause(1); % Guarantee that CEA is done writing before reading data
+pause(.1); % Guarantee that CEA is done writing before reading data
 data = cea_rocket_read(file_name_out, data);
 
 
@@ -418,7 +418,7 @@ if ~keep_file
     
     % Wait until the output file exists
     while exist(file_name_out, 'file') ~= 2
-        pause(0.01);
+        pause(0.05);
     end
     delete(file_name_out);
 end

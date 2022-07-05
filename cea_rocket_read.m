@@ -329,7 +329,8 @@ while ischar(line)
         if ~isKey(data_type, 'pin')
             data_type('pin') = [];
         end
-        pin_index = find(data_type('pin') < map('pin'));
+
+        pin_index = find(data_type('pin') == map('pin'));  %changed < to == to allow for duplicates
         if isempty(pin_index)
             pin_index = 1;
         else
