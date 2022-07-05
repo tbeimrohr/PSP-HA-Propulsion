@@ -74,11 +74,11 @@
 %
 % Notes:
 % - Code is sensitive to the starting guess for delta v in "dv_change", if
-% code doesnt run aka time = nan, then try changing dv_change. 
+% code doesnt run aka time = nan, then try changing dv_change.
 % - If the coasting option is turned on, and answers become either unreasonable or
 % nan or doesnt converge then the issue is the coasting height set in
 % "StageHeight" is too high, ie the rocket is stopped by drag and gravity
-% before it can reach the set point for second stage ignition. 
+% before it can reach the set point for second stage ignition.
 % - constants with brackets [] are used for testing multiple propellants at
 % the same time
 % - The only known improvement at this time is to corelate the exit
@@ -123,7 +123,7 @@ altitude_ref = combo(7:8); %km
 deltaV_ref = combo(9:10); %km/s
 coastlim_ref = combo(11:12); %km
 
- 
+
 if isempty(cpp1.genNum)
     generation = cpp2.genNum;
     totalProfiles = cpp2.allProfiles;
@@ -174,13 +174,16 @@ end
 if exist("ARM_Metrics_temp.xls")
     range = append('H',num2str(2),':','H',num2str(2));
     import_dv = readmatrix("ARM_Metrics_temp.xls", 'Range',range);
-    flip_dvsign = 1;
-    if ~isnan(import_dv) && exist("ARM_Profiles_temp.xls")
+    if import_dv == 0
+        import_dv_all = readmatrix("ARM_Metrics_temp.xls");
+        import_dv = import_dv_all(end,8);
+    end
+    if ~isnan(import_dv) && exist("ARM_Profiles_temp.xls") && import_dv ~= 0
         profiles = readmatrix('ARM_Profiles_temp.xls');
         baseProf = profiles(1,:);
         dv_shift_cum = cumsum(graph-baseProf);
         dv_shift = dv_shift_cum(end)/50000;
-        dv_change = import_dv + flip_dvsign*dv_shift;
+        dv_change = import_dv + dv_shift;
     end
 end
 
@@ -190,9 +193,8 @@ alt_tol = .01;
 check = 1;
 o = 1;
 coastCounter = 1;
-flipdv = 1;
-flipcount = 1;
-while (abs(dif_alt - 1) > alt_tol) & check & go 
+skip = 1;
+while (abs(dif_alt - 1) > alt_tol) & check & go
     %% Constants
     j = j + 1;
     w = w + 1;
@@ -203,29 +205,48 @@ while (abs(dif_alt - 1) > alt_tol) & check & go
     ep2 = [10]; %[26.86 29.2 22.1]./3;
 
     pc_graph = cpp1.coords;
+    pc_check1 = find(pc_graph < 10);
+    if length(pc_check1) > 1
+        drop(1) = 0;
+        for c = 2:length(pc_check1)
+            drop(c) = pc_check1(c) - pc_check1(1);
+            if abs(drop(c) - drop(c-1)) > 1
+                skip = -1;
+            end
+        end
+    end
+
     pc_graph2 = cpp2.coords;
+    pc_check2 = find(pc_graph2 < 10);
+    if length(pc_check2) > 1
+        drop2(1) = 0;
+        for c = 2:length(pc_check2)
+            drop2(c) = pc_check2(c) - pc_check2(1);
+            if abs(drop2(c) - drop2(c-1)) > 1
+                skip = -1;
+            end
+        end
+    end
 
     if w == 1
-        [isp1, cstar1, ve1, exit_pressure1, Tc1] = runCEA(pc_graph,ep);
-        [isp2, cstar2, ve2, exit_pressure2, Tc2] = runCEA(pc_graph2,ep2);
-%         if stageNum == 1 && profileNum == 1
-%             [isp1, cstar1, ve1, exit_pressure1, Tc1] = runCEA(pc_graph,ep);
-%             save("firstStagePropMetrics","isp1","cstar1","ve1","exit_pressure1","Tc1")
-%             [isp2, cstar2, ve2, exit_pressure2, Tc2] = runCEA(pc_graph2,ep2);
-%             save("secondStagePropMetrics","isp2","cstar2","ve2","exit_pressure2","Tc2")
-%         elseif stageNum == 1 && profileNum > 1
-%             [isp1, cstar1, ve1, exit_pressure1, Tc1] = runCEA(pc_graph,ep);
-%             load("secondStagePropMetrics.mat")
-%         elseif stageNum == 2 && profileNum == 1
-%             [isp1, cstar1, ve1, exit_pressure1, Tc1] = runCEA(pc_graph,ep);
-%             save("firstStagePropMetrics","isp1","cstar1","ve1","exit_pressure1","Tc1")
-%             [isp2, cstar2, ve2, exit_pressure2, Tc2] = runCEA(pc_graph2,ep2);
-%             save("secondStagePropMetrics","isp2","cstar2","ve2","exit_pressure2","Tc2")
-%         elseif stageNum == 2 && profileNum > 1
-%             load("firstStagePropMetrics.mat")
-%             [isp2, cstar2, ve2, exit_pressure2, Tc2] = runCEA(pc_graph2,ep2);
-%         end
+        load("CEA_PcData_15")
+        load("CEA_PcData_10")      
     end
+    pc_graph(pc_graph < 1) = 1;
+    pc_graph2(pc_graph2 < 1) = 1;
+
+    isp1 = interp1(pc1_cea,isp1_cea,pc_graph);
+    cstar1 = interp1(pc1_cea,cstar1_cea,pc_graph);
+    ve1 = interp1(pc1_cea,ve1_cea,pc_graph);
+    exit_pressure1 = interp1(pc1_cea,exit_pressure1_cea,pc_graph);
+    Tc1 = interp1(pc1_cea,Tc1_cea,pc_graph);
+
+    isp2 = interp1(pc2_cea,isp2_cea,pc_graph2);
+    cstar2 = interp1(pc2_cea,cstar2_cea,pc_graph2);
+    ve2 = interp1(pc2_cea,ve2_cea,pc_graph2);
+    exit_pressure2 = interp1(pc2_cea,exit_pressure2_cea,pc_graph2);
+    Tc2 = interp1(pc2_cea,Tc2_cea,pc_graph2);
+
 
     stageHeight = [desired_coastlim]; %km, height at which staging must occur, this value is used in the interstage coast which can be turned off in the next line
     if desired_coastlim == 0
@@ -328,6 +349,9 @@ while (abs(dif_alt - 1) > alt_tol) & check & go
     height{j}(1) = 0; %*m
     [T{j}(1),Son{j}(1),P{j}(1),Rho{j}(1)] = atmoscoesa(height{j}(1),'None');
 
+    if skip == -1
+        break
+    end
     if go
         clc
         fprintf('Combination %d...\n',iter)
@@ -527,7 +551,7 @@ while (abs(dif_alt - 1) > alt_tol) & check & go
         dv_change = dv_change + .35*((1-dif_alt_coast)/dif_alt_coast) + coastAdd;
         o = 1;
         dif_alt = 2;
-        if coastCounter > 5
+        if coastCounter >= 3
             skip = -1;
             break
         end
@@ -540,16 +564,18 @@ while (abs(dif_alt - 1) > alt_tol) & check & go
 end
 %% Ouputs
 identif = str2double(append(mpl_ref, dia1_ref, dia2_ref, altitude_ref,deltaV_ref,coastlim_ref));
-output_vec = {identif, (mp{j}(1)+mp2{j}(1)),(mi(end)+mi2(end)), mo(end), ...
-    tb(end), tb2(end), max(Q{j})/1000, tot_dv_mission(end), mpl, desired_alt, diameter1, diameter2};
 
-[~,Value,Cost] = Pareto_Selection(output_vec);
-score = Value - Cost;
-
-output_vec = {identif, (mp{j}(1)+mp2{j}(1)),(mi(end)+mi2(end)), mo(end), ...
-    tb(end), tb2(end), max(Q{j})/1000, tot_dv_mission(end), mpl, desired_alt, diameter1, diameter2,desired_deltaV,desired_coastlim,Value,Cost, score, profileNum};
 if skip == -1
-    output_vec = {identif,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
+    score = -1;
+    output_vec = {identif,0,0,0,0,0,0,0,mpl, desired_alt, diameter1, diameter2,desired_deltaV,desired_coastlim,0,score,0};
+else
+    output_vec = {identif, (mp{j}(1)+mp2{j}(1)),(mi(end)+mi2(end)), mo(end), ...
+        tb(end), tb2(end), max(Q{j})/1000, tot_dv_mission(end), mpl, desired_alt, diameter1, diameter2};
+    [~,Value,Cost] = Pareto_Selection(output_vec);
+    score = Value - Cost;
+
+    output_vec = {identif, (mp{j}(1)+mp2{j}(1)),(mi(end)+mi2(end)), mo(end), ...
+        tb(end), tb2(end), max(Q{j})/1000, tot_dv_mission(end), mpl, desired_alt, diameter1, diameter2,desired_deltaV,desired_coastlim,Value,Cost, score, profileNum};
 end
 
 row = profileNum;

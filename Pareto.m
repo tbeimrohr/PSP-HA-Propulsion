@@ -25,7 +25,7 @@ tb = tb1 + tb2;
 % maxQ_factor = maxQ/maxQ_ref;
 % 
 L_D = ((mp*2.205/V_loading)/rho)/(pi*(((D1+D2)/4)^2))/((D1+D2)/2);
-L_D_factor = 1 - (abs((L_D_ref - L_D)/L_D))^2;
+L_D_factor = 1 - (((L_D_ref - L_D)/L_D_ref))^2;
 
 % 
 % tb_factor = (abs((tb_ref - (tb1+tb2))/(tb1+tb2)))/tb_ref;

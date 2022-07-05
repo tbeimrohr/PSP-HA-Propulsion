@@ -24,7 +24,7 @@ inp('fuel_t') = [298 298];                % Fuel inlet temperature
 inp('ox') = "NH4CLO4(I)";              % Ox name from thermo.inp
 inp('ox_wt%') = AP_wt;
 inp('ox_t') = 298;                  % Ox inlet temperature
-inp('file_name') = sprintf('test1.inp');    % Input/output file name
+inp('file_name') = sprintf('test8.inp');    % Input/output file name
 inp('o/f') = r;               % Mixture ratio
 
 data = cea_rocket_run(inp);     % Call the CEA MATLAB code

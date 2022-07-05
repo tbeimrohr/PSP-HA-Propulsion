@@ -39,18 +39,34 @@ if options.doPlot
         figure(1);
         xcpp1 = mf(xcpp1);
         xcpp1.showPlot();
+        xlabel('Index')
+        ylabel('Pressure [psi]')
+        title(sprintf("Chamber Pressure Profile"))
+        txt = sprintf('img1.png');
+        saveas(1,txt)
     elseif options.stage == 2
         figure(1);
         xcpp2 = mf(xcpp2);
         xcpp2.showPlot();
+        xlabel('Index')
+        ylabel('Pressure [psi]')
+        title(sprintf("Chamber Pressure Profile"))
+
+        txt = sprintf('img2.png');
+        saveas(1,txt)
     elseif options.stage == [1 2]
         figure(1);
         xcpp1 = mf(xcpp1);
         xcpp1.showPlot();
+        xlabel('Index')
+        ylabel('Pressure [psi]')
         figure(2);
         xcpp2 = mf(xcpp2);
         xcpp2.showPlot();
+        xlabel('Index')
+        ylabel('Pressure [psi]')
     end
+
     drawnow
     pf = @(best,rest,genNum) plotFun(best,rest,genNum);
 else
@@ -74,43 +90,43 @@ end
 
 
 if length(options.stage) == 1
-%% metrics
+    %% metrics
 
     choice = best(1,1);
     import_combo = fileread("combos.txt");
     temporary = convertCharsToStrings(import_combo);
     iter = (strfind(temporary,id)-1)/14 + 1;
 
-output_vars = {'Combination','Propellant Mass [kg]','Inert Mass [kg]',...
-    'Total Mass [kg] (including payload)','First Stage Burn Time [sec]',...
-    'Second Stage Burn Time [sec]','Maximum Dynamic Pressure (Max Q) [kPa]',...
-    'Delta V [km/s]','Payload Mass (kg)','Alt [km]','Diameter 1','Diameter 2','Delta V Split for 1st Stage','Coast limit','Value','Cost','Score'};
+    output_vars = {'Combination','Propellant Mass [kg]','Inert Mass [kg]',...
+        'Total Mass [kg] (including payload)','First Stage Burn Time [sec]',...
+        'Second Stage Burn Time [sec]','Maximum Dynamic Pressure (Max Q) [kPa]',...
+        'Delta V [km/s]','Payload Mass (kg)','Alt [km]','Diameter 1','Diameter 2','Delta V Split for 1st Stage','Coast limit','Value','Cost','Score'};
 
 
-out_table = array2table(zeros(1,length(output_vars)), 'VariableNames',output_vars);
-row = 1;
-col1 = 1;
-col2 = 17;
-RangeVariable1 = xlsAddr(row,col1);
-RangeVariable2 = xlsAddr(row,col2);
-RangeVariable = [RangeVariable1,':',RangeVariable2];
-writetable(out_table,'ARM_Metrics.xls','Range',RangeVariable);
+    out_table = array2table(zeros(1,length(output_vars)), 'VariableNames',output_vars);
+    row = 1;
+    col1 = 1;
+    col2 = 17;
+    RangeVariable1 = xlsAddr(row,col1);
+    RangeVariable2 = xlsAddr(row,col2);
+    RangeVariable = [RangeVariable1,':',RangeVariable2];
+    writetable(out_table,'ARM_Metrics.xls','Range',RangeVariable);
 
-output_vec = readmatrix("ARM_Metrics_temp.xls");
-choice_profile = find(output_vec(:,17) == best(1,1).score);
-choice_metrics = output_vec(choice_profile,1:17);
+    output_vec = readmatrix("ARM_Metrics_temp.xls");
+    choice_profile = find(output_vec(:,17) == best(1,1).score);
+    choice_metrics = output_vec(choice_profile,1:17);
 
-row = iter+1;
-col1 = 1;
-col2 = 17;
-RangeVariable1 = xlsAddr(row,col1);
-RangeVariable2 = xlsAddr(row,col2);
-RangeVariable = [RangeVariable1,':',RangeVariable2];
-writematrix(choice_metrics,'ARM_Metrics.xls','Range',RangeVariable);
+    row = iter+1;
+    col1 = 1;
+    col2 = 17;
+    RangeVariable1 = xlsAddr(row,col1);
+    RangeVariable2 = xlsAddr(row,col2);
+    RangeVariable = [RangeVariable1,':',RangeVariable2];
+    writematrix(choice_metrics,'ARM_Metrics.xls','Range',RangeVariable);
 
-delete('ARM_Metrics_temp.xls')
+    delete('ARM_Metrics_temp.xls')
 
-%% profiles
+    %% profiles
 
     %     ID = best.genNum + 1;
 
@@ -121,7 +137,7 @@ delete('ARM_Metrics_temp.xls')
         select = find(score == max(score));
         choice = best(1,select);
     end
-%     lastnum = 0;
+    %     lastnum = 0;
     %     if id > 1
     %         lastnum = str2double(readmatrix("ARM_Profiles.xls","Range","B2:B127","OutputType","string"));
     %         lastnum_blankindex = isnan(lastnum);
@@ -129,7 +145,7 @@ delete('ARM_Metrics_temp.xls')
     %         lastnum = lastnum(end);
     %     end
     output_vars = {string(1:length(choice.coords))};
-%     output_vars2 = {'First Stage Chamber Pressure Profile'};
+    %     output_vars2 = {'First Stage Chamber Pressure Profile'};
 
     out_table = array2table(zeros(1,length(output_vars{1,:})+1),'VariableNames',['Combination',output_vars{1,:}]);
     row = 1;
@@ -149,7 +165,7 @@ delete('ARM_Metrics_temp.xls')
 
     output_vec = [str2num(id),choice.coords];
     out_table = array2table(output_vec);
-    
+
     row = iter + 1;
     col1 = 1;
     col2 = 25;
@@ -179,7 +195,7 @@ else
     RangeVariable = [RangeVariable1,':',RangeVariable2];
     writetable(out_table,'ARM_Profiles.xls','Range',RangeVariable);
 
-%     import_combo = str2double(readmatrix("Design Matrix - Praeto.csv","Range","A2:A127","OutputType","string"));
+    %     import_combo = str2double(readmatrix("Design Matrix - Praeto.csv","Range","A2:A127","OutputType","string"));
 
     output_vec = [import_combo(id),best.coords];
     out_table = array2table(output_vec);
@@ -237,7 +253,6 @@ out = out + cpp.nudge().nudge().xShiftKeyPoints().changeKeyPointsNum().reinterpo
 out = out + cpp.nudge().changeKeyPointsNum().reinterpolateCoords();
 out = out + cpp.nudge().yShiftKeyPoints().yShiftKeyPoints().xShiftKeyPoints().changeKeyPointsNum().reinterpolateCoords();
 out = out + cpp.nudge().xShiftKeyPoints().changeKeyPointsNum();
-
 end
 
 
@@ -252,7 +267,9 @@ best.showPlot(3);
 rest.showPlot(1,0.5);
 ylim([0,best(1).maxPressure]);
 runCount = XChamberPressureProfile.runCounter(best);
-title(sprintf("Generation n = %d, Total Runs:%d",genNum,runCount))
+title(sprintf("Chamber Pressure Profile\nGeneration n = %d, Total Runs:%d",genNum,runCount))
+xlabel('Index')
+ylabel('Pressure [psi]')
 legendText = [];
 for n = 1:numel(best)
     legendText = [legendText,sprintf("Score = %.3f",best(n).score)];
@@ -263,5 +280,7 @@ for n = 1:numel(rest)
 end
 
 legend(legendText,'location','best')
+txt = sprintf('img%d.png',best.trialID+best.genNum);
+saveas(1,txt)
 drawnow();
 end
