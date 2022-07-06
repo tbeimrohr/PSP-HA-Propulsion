@@ -349,6 +349,9 @@ while (abs(dif_alt - 1) > alt_tol) & check & go
     height{j}(1) = 0; %*m
     [T{j}(1),Son{j}(1),P{j}(1),Rho{j}(1)] = atmoscoesa(height{j}(1),'None');
 
+    if isempty(time{j}) || isempty(time2{j})
+        skip = -1;
+    end
     if skip == -1
         break
     end
@@ -556,10 +559,12 @@ while (abs(dif_alt - 1) > alt_tol) & check & go
             break
         end
     else
-        dv_change = dv_change + skip*(.1/(o^2))*((1-dif_alt)/dif_alt);
+        dv_change = dv_change + skip*(.1/(o^3))*((1-dif_alt)/dif_alt);
     end
 
-
+    if w > 30 && dif_alt > .975
+        break
+    end
 
 end
 %% Ouputs
