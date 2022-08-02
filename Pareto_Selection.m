@@ -45,12 +45,12 @@ end
 %% Weights
 
 % Weight 1
-% f1 = .2; % time - bad
-% f2 = .05; % payload - good
-% f3 = .5; % altitude - good
-% f4 = .4; % propellant mass factor - bad
-% f5 = .4; % dynamic pressure - bad
-% f6 = .45; % LD Factor - good
+f1 = .4; % time - bad
+f2 = .05; % payload - good
+f3 = .35; % altitude - good
+f4 = .4; % propellant mass factor - bad
+f5 = .2; % dynamic pressure - bad
+f6 = .6; % LD Factor - good
 
 % % Weight 2
 % f1 = .125;
@@ -60,13 +60,13 @@ end
 % f5 = .275;
 % f6 = .3;
 
-% Weight 3
-f1 = .2;
-f2 = .1;
-f3 = .4;
-f4 = .1;
-f5 = .7;
-f6 = .5;
+% % Weight 3
+% f1 = .2;
+% f2 = .15;
+% f3 = .6;
+% f4 = .1;
+% f5 = .7;
+% f6 = .25;
 
 %% Value and Cost
 

@@ -38,6 +38,7 @@
 clear
 clc
 tic
+rng(56)
 pc_graph = [1000 975 980 990 995 985 925 875 810 785 735 690 680 655 650 625 625 650 650 400 375 250 10 0]; %chamber pressure history in psi
 pc_graph2 = [600 650 675 700 710 715 720 725 730 735 740 745 750 750 750 750 750 750 750 750 600 100 10 0]; %chamber pressure history in psi
 numBest = 1; % Take best n number of profiles from each generation
@@ -67,7 +68,7 @@ if ~exist("CEA_PcData_10.mat")
 end
 
 stop = (length(import_combo)/14);
-for i = 18:stop
+for i = 1:stop
     tic
     ID = import_combo((1 + (15*(i-1))) - (i - 1):(12 + (15*(i-1))) - (i - 1));
     b = run(ID,numBest,numGens,curve1=pc_graph,curve2=pc_graph2,stage=1);
