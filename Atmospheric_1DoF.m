@@ -142,12 +142,12 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%5
 
 %% CSV Identification Codes
-mpl_code = {{'01' '02' '03'} [1 5 10]};
-dia1_code = {{'04' '05' '06'} [4 4.5 5]};
-dia2_code = {{'07' '08' '09'}, [3.5 4 4.5]};
+mpl_code = {{'01' '02' '03'} [3 4 5]};
+dia1_code = {{'04' '05' '06'} [3.75 4 4.25]};
+dia2_code = {{'07' '08' '09'}, [3 3.5 4.5]};
 altitude_code = {{'10' '11' '12'}, [100 125 150]};
-deltaV_code = {{'13' '14' '15'}, [.35 .5 .65]};
-coastlim_code = {{'16' '17' '18'}, [0 20 25]};
+deltaV_code = {{'13' '14' '15' '16'}, [.4 .45 .5 .55]};
+coastlim_code = {{'17' '18' '19'}, [0 20 25]};
 
 mpl = mpl_code{2}(find(strcmp(mpl_ref, mpl_code{1}) == 1));
 diameter1 = dia1_code{2}(find(strcmp(dia1_ref, dia1_code{1}) == 1));
@@ -158,17 +158,17 @@ desired_coastlim = coastlim_code{2}(find(strcmp(coastlim_ref, coastlim_code{1}) 
 
 %% Model
 if desired_deltaV == .35
-    shift = .02;
+    shift = -.2;
 elseif desired_deltaV == .5
-    shift = .7;
+    shift = 0;
 elseif desired_deltaV == .65
-    shift = 1.1;
+    shift = .2;
 end
 
 if mpl == 1
-    dv_change = 5 + shift;
+    dv_change = 4.98 + shift/10;
 elseif mpl == 5
-    dv_change = 3.5 + shift;
+    dv_change = 3.46 + shift;
 end
 
 if exist("ARM_Metrics_temp.xls")

@@ -1,0 +1,10 @@
+problem rocket eq
+    p(psi) = 1, 26, 51, 76, 101, 126
+    o/f = 3.077
+    sup = 15
+reac
+    fuel = AL t(K) = 298.000 wt% = 0.150
+    fuel = HTPB10 t(K) = 298.000 wt% = 0.135
+    ox = NH4CLO4(I) t(K) = 298.000 wt% = 0.650
+outp trans
+end
