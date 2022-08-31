@@ -92,16 +92,31 @@ if go
     j = 0;
 end
 %% Constants
-dv_change = 5; %km/s
+dv_change = 5.097517151; %km/s
 desired_alt = 100; %km
 diameter1 = 4.5;%in
-diameter2 = 4; %in
+diameter2 = 4.5; %in
 mpl = 1; %mass of the payload in kg
+scale1 = .35; %the amount of delta v percentage the first stage will carry
 %% Model
 dif_alt = 2;
 alt_tol = .01;
 check = 1;
 o = 1;
+if ~exist("CEA_PcData_15.mat")
+    pc1_cea = 1:25:1750;
+    [isp1_cea, cstar1_cea, ve1_cea, exit_pressure1_cea, Tc1_cea] = runCEA(pc1_cea,ep);
+    save("CEA_PcData_15.mat","isp1_cea","cstar1_cea","ve1_cea","exit_pressure1_cea","Tc1_cea","pc1_cea")
+else
+    load("CEA_PcData_15");
+end
+if ~exist("CEA_PcData_10.mat")
+    pc2_cea = 1:20:1100;
+    [isp2_cea, cstar2_cea, ve2_cea, exit_pressure2_cea, Tc2_cea] = runCEA(pc2_cea,ep2);
+    save("CEA_PcData_10.mat","isp2_cea","cstar2_cea","ve2_cea","exit_pressure2_cea","Tc2_cea","pc2_cea")
+else
+    load("CEA_PcData_10");
+end
 while (abs(dif_alt - 1) > alt_tol) & check & o < 4 & go
     %% Constants 2
     j = j + 1;
@@ -111,32 +126,45 @@ while (abs(dif_alt - 1) > alt_tol) & check & o < 4 & go
     At_srb2 = ((1/12)^2)*pi/39.37;  %m2, the value is converted from inches^2 to m^2
     ep2 = [10]; %[26.86 29.2 22.1]./3;
 
-    pc_graph = [1000 975 980 990 995 985  925 875 810 785 735 690 680 655 650 625 625 650 650 400 375 250 10].*1.5; %chamber pressure history in psi
-    %     pc_graph = [849	849.28125	849.28125	849.515625	849.796875	854.4375	854.625	855	838.3097015	814.9962687	784.2649254	784	784	688.3356643	634.6293706	564.1398601	544	544	401.836858	29.58308157	14.79154079	13.96978852	13.14803625	0]; %chamber pressure history in psi
-    pc_graph2 = [600 650 675 700 710 715 720 725 730 735 740 745 750 750 750 750 750 750 750 750 750 600 100 10].*1.25; %chamber pressure history in psi
+    pc_graph = [1433	1433	1444	1451	1454	1468	1470	1460	1435	1332	1295	1139	1138	1065	720	675	642	637	607	506	480	472	415	0]; %chamber pressure history in psi
+    pc_graph2 = [643	668.5	705.125	719.8125	722	722	722	721	721.2857143	720	680.5714286	720.2745098	602.4444444	712.3333333	788	797.1687243	726	731.308642	704.1481481	653.5714286	593.4151786	464.9732143	214.9616071	23.2]; %chamber pressure history in psi
+
+    pc_graph(pc_graph < 1) = 1;
+    pc_graph2(pc_graph2 < 1) = 1;
+
+    isp1 = interp1(pc1_cea,isp1_cea,pc_graph);
+    cstar1 = interp1(pc1_cea,cstar1_cea,pc_graph);
+    ve1 = interp1(pc1_cea,ve1_cea,pc_graph);
+    exit_pressure1 = interp1(pc1_cea,exit_pressure1_cea,pc_graph);
+    Tc1 = interp1(pc1_cea,Tc1_cea,pc_graph);
+
+    isp2 = interp1(pc2_cea,isp2_cea,pc_graph2);
+    cstar2 = interp1(pc2_cea,cstar2_cea,pc_graph2);
+    ve2 = interp1(pc2_cea,ve2_cea,pc_graph2);
+    exit_pressure2 = interp1(pc2_cea,exit_pressure2_cea,pc_graph2);
+    Tc2 = interp1(pc2_cea,Tc2_cea,pc_graph2);
+
+    Pe_srb = exit_pressure1; %Pa
+    Pe_srb2 = exit_pressure2; %Pa
 
     stageHeight = [15]; %km, height at which staging must occur, this value is used in the interstage coast which can be turned off in the next line
     BeforeStageCoast = 0; %value used to turn off or on the interstage coast, bewarned if the value of stageHeight is chosen to be too high where the rocket doesnt make it to the desired height, the answers obtained will become nonsensical
 
-    cstar_srb = [1737.5]; %m/s
-    ve = [2461.1]; %m/s
-    Pe_srb = [29073]; %Pa (assumes constant exit pressure during the flight, more indepth analysis is needed to find the fluctuation according to the chamber pressure)
-    Pe_srb2 = [29073]; %Pa (assumes constant exit pressure during the flight, more indepth analysis is needed to find the fluctuation according to the chamber pressure)
-
     tol = .00001; %this is the tolerance used to calculate propellant mass vs the given propellant mass, the code converges rather quickly so this value can be set extremely small to obtain "more accurate" results
-    difmp = ones(1,length(ve)).*10; %initalizing the calculated prop mass difference
-    tb(j) = ones(1,length(ve)).*1; %guessing the burn out time of stage 1
-    difmp2 = ones(1,length(ve)).*10; %initalizing the calculated prop mass difference
-    tb2(j) = ones(1,length(ve)).*1; %guessing the burn out time of stage 2
+    difmp = 10; %initalizing the calculated prop mass difference
+    tb(j) = 1; %guessing the burn out time of stage 1
+    difmp2 = 10; %initalizing the calculated prop mass difference
+    tb2(j) = 1; %guessing the burn out time of stage 2
 
     lam1 = .85; %propellant mass fraction of stage 1
     lam2 = .785; %propellant mass fraction of stage 2
 
 
-    Isp = [280].*.9; %sec
+    eta_isp = .925;
+    Isp1 = mean(isp1)*eta_isp; %sec
+    Isp2 = mean(isp2)*eta_isp;
     g = 9.81; %m/s2
     tot_dv_mission(j) = [dv_change]; %km/s
-    scale1 = .37; %the amount of delta v percentage the first stage will carry
     Area1 = (pi*(diameter1/2)^2)/1550; %m2
     Area2 = (pi*(diameter2/2)^2)/1550; %m2
 
@@ -148,8 +176,8 @@ while (abs(dif_alt - 1) > alt_tol) & check & o < 4 & go
     dv1 = scale1.*tot_dv_mission(j);
     dv2 = (1-scale1).*tot_dv_mission(j);
 
-    MR1 = exp((dv1.*1000)./(g.*Isp));
-    MR2 = exp((dv2.*1000)./(g.*Isp));
+    MR1 = exp((dv1.*1000)./(g.*Isp1));
+    MR2 = exp((dv2.*1000)./(g.*Isp2));
 
     mp2{j} = mpl.*((MR2-1)./(MR2-((MR2-1)./lam2))); %kg
     mi2(j) = mp2{j}.*((1-lam2)./lam2); %kg
@@ -162,36 +190,48 @@ while (abs(dif_alt - 1) > alt_tol) & check & o < 4 & go
     mf(j) = mi(j) + mo2(j); %kg
 
     while abs(difmp - 1) > tol
+        tb(j) = tb(j) + 2*(1-difmp);
         time_srb = linspace(0,tb(j),length(pc_graph)); %sec
         pc_srb = ModifySize(pc_graph,length(time_srb)); %psi
+        cstar1_srb = ModifySize(cstar1,length(time_srb));
         Pc_srb = pc_srb.*6894.76; %Pa
-        mdot_srbA{j} = Pc_srb.*At_srb./cstar_srb;
+        mdot_srbA{j} = Pc_srb.*At_srb./cstar1_srb;
         intmdot = cumtrapz(mdot_srbA{j})*(time_srb(2)-time_srb(1));
         mdot_check = intmdot(end);
 
         difmp = mdot_check/mp{j};
-        tb(j) = tb(j) + 2*(1 - difmp);
     end
 
     time{j} = linspace(0,time_srb(end),time_srb(end)/dt + 1);
     mdot_srb{j} = interp1(time_srb,mdot_srbA{j},time{j});
-    mdotv_srb{j} = mdot_srb{j}.*ve;
+    ve1_srb = ModifySize(ve1,length(time{j}));
+    Pe_srb = ModifySize(Pe_srb,length(time{j}));
+    Tc1 = ModifySize(Tc1,length(time{j}));
+    Pc_srb = ModifySize(pc_graph,length(time{j})); %psi
+    cstar1_srb = ModifySize(cstar1,length(time{j}));
+    mdotv_srb{j} = mdot_srb{j}.*ve1_srb;
 
     while abs(difmp2 - 1) > tol
+        tb2(j) = tb2(j) + 1*(1-difmp2);
         time_srb2 = linspace(0,tb2(j),length(pc_graph2)); %sec
         pc_srb2 = ModifySize(pc_graph2,length(time_srb2)); %psi
+        cstar2_srb = ModifySize(cstar2,length(time_srb2));
         Pc_srb2 = pc_srb2.*6894.76; %Pa
-        mdot_srbB{j} = Pc_srb2.*At_srb2./cstar_srb;
+        mdot_srbB{j} = Pc_srb2.*At_srb2./cstar2_srb;
         intmdot2 = cumtrapz(mdot_srbB{j})*(time_srb2(2)-time_srb2(1));
         mdot_check2 = intmdot2(end);
 
         difmp2 = mdot_check2/mp2{j};
-        tb2(j) = tb2(j) + 1*(1 - difmp2);
     end
 
     time2{j} = linspace(0,time_srb2(end),time_srb2(end)/dt + 1);
+    ve2_srb = ModifySize(ve2,length(time2{j}));
+    Pe_srb2 = ModifySize(Pe_srb2,length(time2{j}));
+    Tc2 = ModifySize(Tc2,length(time2{j}));
+    Pc_srb2 = ModifySize(pc_graph2,length(time2{j})); %psi
+    cstar2_srb = ModifySize(cstar2,length(time2{j}));
     mdot_srb2{j} = interp1(time_srb2,mdot_srbB{j},time2{j});
-    mdotv_srb2{j} = mdot_srb2{j}.*ve;
+    mdotv_srb2{j} = mdot_srb2{j}.*ve2_srb;
 
     i = 1;
     t{j}(1) = 0; %sec
@@ -211,7 +251,7 @@ while (abs(dif_alt - 1) > alt_tol) & check & o < 4 & go
             Mach{j}(i) = vel{j}(i)/Son{j}(i);
             mp{j}(i+1) = mp{j}(i) - mdot_srb{j}(i)*dt;
             m{j}(i+1) = mp{j}(i+1) + mi(j) + mo2(j);
-            F_srb{j}(i+1) = (mdotv_srb{j}(i) + Ae_srb(j).*(Pe_srb - P{j}(i)));
+            F_srb{j}(i+1) = (mdotv_srb{j}(i) + Ae_srb(j).*(Pe_srb(i) - P{j}(i)));
             if Mach{j}(i) < .5
                 Cd{j}(i) = Cd_o;
                 %                 Cd{j}(i) = Cd_o/(sqrt(1-(Mach{j}(i))^2));
@@ -299,7 +339,7 @@ while (abs(dif_alt - 1) > alt_tol) & check & o < 4 & go
             end
             mp2{j}(k+1) = mp2{j}(k) - mdot_srb2{j}(k)*dt;
             m{j}(i+1) = mp2{j}(k+1) + mi2(j) + mpl;
-            F_srb{j}(i+1) = (mdotv_srb2{j}(k) + Ae_srb2(j).*(Pe_srb2 - P{j}(i)));
+            F_srb{j}(i+1) = (mdotv_srb2{j}(k) + Ae_srb2(j).*(Pe_srb2(k) - P{j}(i)));
             Drag{j}(i+1) = .5*Rho{j}(i)*Cd{j}(i)*(vel{j}(i)^2)*Area2;
             wDrag{j}(i+1) = m{j}(i)*g;
             F_net{j}(i+1) = F_srb{j}(i) - Drag{j}(i) - wDrag{j}(i);
