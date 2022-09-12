@@ -142,12 +142,12 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%5
 
 %% CSV Identification Codes
-mpl_code = {{'01' '02' '03'} [3 4 5]};
-dia1_code = {{'04' '05' '06'} [3.75 4 4.25]};
-dia2_code = {{'07' '08' '09'}, [3 3.5 4.5]};
-altitude_code = {{'10' '11' '12'}, [100 125 150]};
-deltaV_code = {{'13' '14' '15' '16'}, [.4 .45 .5 .55]};
-coastlim_code = {{'17' '18' '19'}, [0 20 25]};
+mpl_code = {{'01'} [.5]};
+dia1_code = {{'02' '03' '04'} [4.5 5 6]};
+dia2_code = {{'05' '06' '07'}, [3.5 4 4.5]};
+altitude_code = {{'08' '09' '10'}, [100 125 150]};
+deltaV_code = {{'11' '12'}, [.35 .5]};
+coastlim_code = {{'13'}, [0]};
 
 mpl = mpl_code{2}(find(strcmp(mpl_ref, mpl_code{1}) == 1));
 diameter1 = dia1_code{2}(find(strcmp(dia1_ref, dia1_code{1}) == 1));
@@ -158,17 +158,13 @@ desired_coastlim = coastlim_code{2}(find(strcmp(coastlim_ref, coastlim_code{1}) 
 
 %% Model
 if desired_deltaV == .35
-    shift = -.2;
+    shift = -.95;
 elseif desired_deltaV == .5
     shift = 0;
-elseif desired_deltaV == .65
-    shift = .2;
 end
 
-if mpl == 1
-    dv_change = 4.98 + shift/10;
-elseif mpl == 5
-    dv_change = 3.46 + shift;
+if mpl == .5
+    dv_change = 4.25 + shift;
 end
 
 if exist("ARM_Metrics_temp.xls")
@@ -199,9 +195,9 @@ while (abs(dif_alt - 1) > alt_tol) & check & go
     j = j + 1;
     w = w + 1;
     dt = .01; %sec
-    At_srb = ((1/12)^2)*pi/39.37; %m2, the value is converted from inches^2 to m^2
+    At_srb = ((.5/12)^2)*pi/10.7639104; %m2, the value is converted from inches^2 to m^2
     ep = [15]; %[26.86 29.2 22.1]; %[Formula#1 Formula#2 Formula#3 ...]
-    At_srb2 = ((1/12)^2)*pi/39.37;  %m2, the value is converted from inches^2 to m^2
+    At_srb2 = ((.5/12)^2)*pi/10.7639104;  %m2, the value is converted from inches^2 to m^2
     ep2 = [10]; %[26.86 29.2 22.1]./3;
 
     pc_graph = cpp1.coords;
@@ -264,10 +260,10 @@ while (abs(dif_alt - 1) > alt_tol) & check & go
     difmp2 = 10; %initalizing the calculated prop mass difference
     tb2(j) = 1; %guessing the burn out time of stage 2
 
-    lam1 = .85; %propellant mass fraction of stage 1
-    lam2 = .785; %propellant mass fraction of stage 2
+    lam1 = .7; %propellant mass fraction of stage 1
+    lam2 = .6; %propellant mass fraction of stage 2
 
-    eta_isp = .925;
+    eta_isp = .9;
     Isp1 = mean(isp1)*eta_isp; %sec
     Isp2 = mean(isp2)*eta_isp;
     g = 9.81; %m/s2
@@ -296,7 +292,10 @@ while (abs(dif_alt - 1) > alt_tol) & check & go
     mi(j) = mp{j}.*((1-lam1)./lam1); %kg
     mo(j) = mi(j) + mo2(j) + mp{j}; %kg
     mf(j) = mi(j) + mo2(j); %kg
-
+    if mo(j) < 0
+        skip = -1;
+        break
+    end
     while abs(difmp - 1) > tol
         tb(j) = tb(j) + 2*(1-difmp);
         time_srb = linspace(0,tb(j),length(pc_graph)); %sec

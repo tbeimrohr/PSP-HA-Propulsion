@@ -29,12 +29,12 @@ function Pareto_write
 % YOU WILL NEED 'DEEP LEARNING TOOLBOX' TO USE THIS
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-payload = [-1,-2]; %Codes for payload mass
-D_1 = [-4,-5,-6]; %Codes for first-stage diameter 
-D_2 = [-7,-8,-9]; %Codes for second-stage diameter
-alt = [10,11,12]; %Codes for desired altitude
-dv_1 = [13,14,15,16]; %Codes for dv % split for stage 1
-coast_lim = [17]; %Codes for coasting upper limit
+payload = [-1]; %Codes for payload mass
+D_1 = [-2,-3,-4]; %Codes for first-stage diameter 
+D_2 = [-5,-6,-7]; %Codes for second-stage diameter
+alt = [-8,-9,10]; %Codes for desired altitude
+dv_1 = [11,12]; %Codes for dv % split for stage 1
+coast_lim = [13]; %Codes for coasting upper limit
 
 x = (combvec(payload, D_1, D_2, alt,dv_1,coast_lim))'; % get all possible pareto combinations
 
