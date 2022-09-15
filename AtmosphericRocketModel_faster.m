@@ -85,6 +85,7 @@
 %% Start of Code
 tic
 clc
+close all
 go = input('Run Trajectory Simulation? y = 1 n = 0\n');
 if go
     clear
@@ -92,10 +93,10 @@ if go
     j = 0;
 end
 %% Constants
-dv_change = 5.097517151; %km/s
+dv_change = 3; %km/s
 desired_alt = 100; %km
-diameter1 = 4.5;%in
-diameter2 = 4.5; %in
+diameter1 = 5;%in
+diameter2 = 4; %in
 mpl = 1; %mass of the payload in kg
 scale1 = .35; %the amount of delta v percentage the first stage will carry
 %% Model
@@ -121,13 +122,13 @@ while (abs(dif_alt - 1) > alt_tol) & check & o < 4 & go
     %% Constants 2
     j = j + 1;
     dt = .01; %sec
-    At_srb = ((1/12)^2)*pi/39.37; %m2, the value is converted from inches^2 to m^2
+    At_srb = ((.5/12)^2)*pi/10.764; %m2, the value is converted from inches^2 to m^2
     ep = [15]; %[26.86 29.2 22.1]; %[Formula#1 Formula#2 Formula#3 ...]
-    At_srb2 = ((1/12)^2)*pi/39.37;  %m2, the value is converted from inches^2 to m^2
+    At_srb2 = ((.5/12)^2)*pi/10.764;  %m2, the value is converted from inches^2 to m^2
     ep2 = [10]; %[26.86 29.2 22.1]./3;
 
-    pc_graph = [1433	1433	1444	1451	1454	1468	1470	1460	1435	1332	1295	1139	1138	1065	720	675	642	637	607	506	480	472	415	0]; %chamber pressure history in psi
-    pc_graph2 = [643	668.5	705.125	719.8125	722	722	722	721	721.2857143	720	680.5714286	720.2745098	602.4444444	712.3333333	788	797.1687243	726	731.308642	704.1481481	653.5714286	593.4151786	464.9732143	214.9616071	23.2]; %chamber pressure history in psi
+    pc_graph = [1602	1603	1603	1603	1605	1607	1613	1615	1589	1560	1552	1506	1493	1467	1426	1233	887	812	793	723	562	505	330	0]; %chamber pressure history in psi
+    pc_graph2 = [842	845.2737269	858.2905093	879.7760417	884.0104167	909	932	932.6383929	934.2589286	938.0625	940	945	945	945	935.4642857	869	890.8571429	821.2928571	763	572	752.875	703.375	603.625	101.1176471]; %chamber pressure history in psi
 
     pc_graph(pc_graph < 1) = 1;
     pc_graph2(pc_graph2 < 1) = 1;
@@ -156,11 +157,10 @@ while (abs(dif_alt - 1) > alt_tol) & check & o < 4 & go
     difmp2 = 10; %initalizing the calculated prop mass difference
     tb2(j) = 1; %guessing the burn out time of stage 2
 
-    lam1 = .85; %propellant mass fraction of stage 1
-    lam2 = .785; %propellant mass fraction of stage 2
+    lam1 = .7; %propellant mass fraction of stage 1
+    lam2 = .6; %propellant mass fraction of stage 2
 
-
-    eta_isp = .925;
+    eta_isp = .9;
     Isp1 = mean(isp1)*eta_isp; %sec
     Isp2 = mean(isp2)*eta_isp;
     g = 9.81; %m/s2
@@ -169,6 +169,9 @@ while (abs(dif_alt - 1) > alt_tol) & check & o < 4 & go
     Area2 = (pi*(diameter2/2)^2)/1550; %m2
 
     Cd_o = .5;
+    coneAngle = (5.74)*2; %deg
+    critMach = .7;
+    critMachSup = 1.3;
     %% 1D Model
     Ae_srb(j) = ep * At_srb;
     Ae_srb2(j) = ep2 * At_srb2;
@@ -188,9 +191,10 @@ while (abs(dif_alt - 1) > alt_tol) & check & o < 4 & go
     mi(j) = mp{j}.*((1-lam1)./lam1); %kg
     mo(j) = mi(j) + mo2(j) + mp{j}; %kg
     mf(j) = mi(j) + mo2(j); %kg
-
+    h = 1;
+    o2 = 1;
     while abs(difmp - 1) > tol
-        tb(j) = tb(j) + 2*(1-difmp);
+        tb(j) = tb(j) + (.9/(o2^2))*(1-difmp)/(abs(difmp));
         time_srb = linspace(0,tb(j),length(pc_graph)); %sec
         pc_srb = ModifySize(pc_graph,length(time_srb)); %psi
         cstar1_srb = ModifySize(cstar1,length(time_srb));
@@ -200,6 +204,11 @@ while (abs(dif_alt - 1) > alt_tol) & check & o < 4 & go
         mdot_check = intmdot(end);
 
         difmp = mdot_check/mp{j};
+        sign_check_mp(h) = sign(difmp - 1);
+        if h > 1 && sign_check_mp(h) ~= sign_check_mp(h-1)
+            o2 = o2 + 1;
+        end
+        h = h + 1;
     end
 
     time{j} = linspace(0,time_srb(end),time_srb(end)/dt + 1);
@@ -210,9 +219,10 @@ while (abs(dif_alt - 1) > alt_tol) & check & o < 4 & go
     Pc_srb = ModifySize(pc_graph,length(time{j})); %psi
     cstar1_srb = ModifySize(cstar1,length(time{j}));
     mdotv_srb{j} = mdot_srb{j}.*ve1_srb;
-
+    h = 1;
+    o2 = 1;
     while abs(difmp2 - 1) > tol
-        tb2(j) = tb2(j) + 1*(1-difmp2);
+        tb2(j) = tb2(j) + (.9/(o2^2))*(1-difmp2)/(abs(difmp2));
         time_srb2 = linspace(0,tb2(j),length(pc_graph2)); %sec
         pc_srb2 = ModifySize(pc_graph2,length(time_srb2)); %psi
         cstar2_srb = ModifySize(cstar2,length(time_srb2));
@@ -222,6 +232,11 @@ while (abs(dif_alt - 1) > alt_tol) & check & o < 4 & go
         mdot_check2 = intmdot2(end);
 
         difmp2 = mdot_check2/mp2{j};
+        sign_check_mp2(h) = sign(difmp2 - 1);
+        if h > 1 && sign_check_mp2(h) ~= sign_check_mp2(h-1)
+            o2 = o2 + 1;
+        end
+        h = h + 1;
     end
 
     time2{j} = linspace(0,time_srb2(end),time_srb2(end)/dt + 1);
@@ -252,13 +267,12 @@ while (abs(dif_alt - 1) > alt_tol) & check & o < 4 & go
             mp{j}(i+1) = mp{j}(i) - mdot_srb{j}(i)*dt;
             m{j}(i+1) = mp{j}(i+1) + mi(j) + mo2(j);
             F_srb{j}(i+1) = (mdotv_srb{j}(i) + Ae_srb(j).*(Pe_srb(i) - P{j}(i)));
-            if Mach{j}(i) < .5
-                Cd{j}(i) = Cd_o;
-                %                 Cd{j}(i) = Cd_o/(sqrt(1-(Mach{j}(i))^2));
-            elseif Mach{j}(i) >= .5 & Mach{j}(i) <= 2 & Cd{j}(i-1) > Cd_o*.97
-                Cd{j}(i) = Cd_o^((1-Mach{j}(i))*sign(1-Mach{j}(i)));
+            if Mach{j}(i) < critMach
+                Cd{j}(i) = Cd_o/(sqrt(1-(Mach{j}(i))^2) + (Cd_o/2)*(((Mach{j}(i))^2)/(1+sqrt(1-(Mach{j}(i))^2))));
+            elseif Mach{j}(i) >= critMach && Mach{j}(i) <= critMachSup
+                Cd{j}(i) = 2 - 1/(sqrt(1-(Mach{j}(i) -1)^2));
             else
-                Cd{j}(i) = Cd_o*.97;
+                Cd{j}(i) = Cd_o + deg2rad(coneAngle)/(sqrt((Mach{j}(i))^2 - 1));
             end
             Drag{j}(i+1) = .5*Rho{j}(i)*Cd{j}(i)*(vel{j}(i)^2)*Area1;
             wDrag{j}(i+1) = m{j}(i)*g;
@@ -273,7 +287,11 @@ while (abs(dif_alt - 1) > alt_tol) & check & o < 4 & go
             else
                 intacc =cumtrapz(acceleration{j})*dt;
                 vel{j}(i+1) = intacc(end);
-                Q{j}(i+1) = .5*Rho{j}(i)*vel{j}(i)^2;
+                if Mach{j}(i) < 0.3
+                    Q{j}(i+1) = .5*Rho{j}(i)*vel{j}(i)^2;
+                else
+                    Q{j}(i+1) = 0.5 * Mach{j}(i) ^ 2 * 1.4 * P{j}(i); %compressible dynamic presure [Pa]
+                end
                 intvel = cumtrapz(vel{j})*dt;
                 height{j}(i+1) = intvel(end);
             end
@@ -291,13 +309,12 @@ while (abs(dif_alt - 1) > alt_tol) & check & o < 4 & go
             end
             Mach{j}(i) = vel{j}(i)/Son{j}(i);
             m{j}(i+1) = m{j}(end);
-            if Mach{j}(i) < .5
-                Cd{j}(i) = Cd_o;
-                %                 Cd{j}(i) = Cd_o/(sqrt(1-(Mach{j}(i))^2));
-            elseif Mach{j}(i) >= .5 & Mach{j}(i) <= 2 & Cd{j}(i-1) > Cd_o*.97
-                Cd{j}(i) = Cd_o^((1-Mach{j}(i))*sign(1-Mach{j}(i)));
+            if Mach{j}(i) < critMach
+                Cd{j}(i) = Cd_o/(sqrt(1-(Mach{j}(i))^2) + (Cd_o/2)*(((Mach{j}(i))^2)/(1+sqrt(1-(Mach{j}(i))^2))));
+            elseif Mach{j}(i) >= critMach & Mach{j}(i) <= critMachSup
+                Cd{j}(i) = 2 - 1/(sqrt(1-(Mach{j}(i) -1)^2));
             else
-                Cd{j}(i) = Cd_o*.97;
+                Cd{j}(i) = Cd_o + deg2rad(coneAngle)/(sqrt((Mach{j}(i))^2 - 1));
             end
             Drag{j}(i+1) = .5*Rho{j}(i)*Cd{j}(i)*(vel{j}(i)^2)*Area1;
             wDrag{j}(i+1) = m{j}(i)*g;
@@ -312,7 +329,11 @@ while (abs(dif_alt - 1) > alt_tol) & check & o < 4 & go
             else
                 intacc =cumtrapz(acceleration{j})*dt;
                 vel{j}(i+1) = intacc(end);
-                Q{j}(i+1) = .5*Rho{j}(i)*vel{j}(i)^2;
+                if Mach{j}(i) < 0.3
+                    Q{j}(i+1) = .5*Rho{j}(i)*vel{j}(i)^2;
+                else
+                    Q{j}(i+1) = 0.5 * Mach{j}(i) ^ 2 * 1.4 * P{j}(i); %compressible dynamic presure [Pa]
+                end                
                 intvel = cumtrapz(vel{j})*dt;
                 height{j}(i+1) = intvel(end);
             end
@@ -329,13 +350,12 @@ while (abs(dif_alt - 1) > alt_tol) & check & o < 4 & go
                 Rho{j}(i) = 0;
             end
             Mach{j}(i) = vel{j}(i)/Son{j}(i);
-            if Mach{j}(i) < .5
-                Cd{j}(i) = Cd_o;
-                %                 Cd{j}(i) = Cd_o/(sqrt(1-(Mach{j}(i))^2));
-            elseif Mach{j}(i) >= .5 & Mach{j}(i) <= 2 & Cd{j}(i-1) > Cd_o*.97
-                Cd{j}(i) = Cd_o^((1-Mach{j}(i))*sign(1-Mach{j}(i)));
+            if Mach{j}(i) < critMach
+                Cd{j}(i) = Cd_o/(sqrt(1-(Mach{j}(i))^2) + (Cd_o/2)*(((Mach{j}(i))^2)/(1+sqrt(1-(Mach{j}(i))^2))));
+            elseif Mach{j}(i) >= critMach & Mach{j}(i) <= critMachSup
+                Cd{j}(i) = 2 - 1/(sqrt(1-(Mach{j}(i) -1)^2));
             else
-                Cd{j}(i) = Cd_o*.97;
+                Cd{j}(i) = Cd_o + deg2rad(coneAngle)/(sqrt((Mach{j}(i))^2 - 1));
             end
             mp2{j}(k+1) = mp2{j}(k) - mdot_srb2{j}(k)*dt;
             m{j}(i+1) = mp2{j}(k+1) + mi2(j) + mpl;
@@ -353,7 +373,11 @@ while (abs(dif_alt - 1) > alt_tol) & check & o < 4 & go
             else
                 intacc =cumtrapz(acceleration{j})*dt;
                 vel{j}(i+1) = intacc(end);
-                Q{j}(i+1) = .5*Rho{j}(i)*vel{j}(i)^2;
+                if Mach{j}(i) < 0.3
+                    Q{j}(i+1) = .5*Rho{j}(i)*vel{j}(i)^2;
+                else
+                    Q{j}(i+1) = 0.5 * Mach{j}(i) ^ 2 * 1.4 * P{j}(i); %compressible dynamic presure [Pa]
+                end                
                 intvel = cumtrapz(vel{j})*dt;
                 height{j}(i+1) = intvel(end);
             end
@@ -370,13 +394,12 @@ while (abs(dif_alt - 1) > alt_tol) & check & o < 4 & go
                 Rho{j}(i) = 0;
             end
             Mach{j}(i) = vel{j}(i)/Son{j}(i);
-            if Mach{j}(i) < .5
-                Cd{j}(i) = Cd_o;
-                %                 Cd{j}(i) = Cd_o/(sqrt(1-(Mach{j}(i))^2));
-            elseif Mach{j}(i) >= .5 & Mach{j}(i) <= 2 & Cd{j}(i-1) > Cd_o*.97
-                Cd{j}(i) = Cd_o^((1-Mach{j}(i))*sign(1-Mach{j}(i)));
+            if Mach{j}(i) < critMach
+                Cd{j}(i) = Cd_o/(sqrt(1-(Mach{j}(i))^2) + (Cd_o/2)*(((Mach{j}(i))^2)/(1+sqrt(1-(Mach{j}(i))^2))));
+            elseif Mach{j}(i) >= critMach && Mach{j}(i) <= critMachSup
+                Cd{j}(i) = 2 - 1/(sqrt(1-(Mach{j}(i) -1)^2));
             else
-                Cd{j}(i) = Cd_o*.97;
+                Cd{j}(i) = Cd_o + deg2rad(coneAngle)/(sqrt((Mach{j}(i))^2 - 1));
             end
             m{j}(i+1) = m{j}(end);
             Drag{j}(i+1) = .5*Rho{j}(i)*Cd{j}(i)*(vel{j}(i)^2)*Area2;
@@ -386,13 +409,21 @@ while (abs(dif_alt - 1) > alt_tol) & check & o < 4 & go
             if i >= 1+index_coast2(j)
                 intacc = vel{j}(i) + trapz(acceleration{j}(end-1:end)).*dt;
                 vel{j}(i+1) = intacc(end);
-                Q{j}(i+1) = .5*Rho{j}(i)*vel{j}(i)^2;
+                if Mach{j}(i) < 0.3
+                    Q{j}(i+1) = .5*Rho{j}(i)*vel{j}(i)^2;
+                else
+                    Q{j}(i+1) = 0.5 * Mach{j}(i) ^ 2 * 1.4 * P{j}(i); %compressible dynamic presure [Pa]
+                end
                 intvel = height{j}(i) + trapz(vel{j}(end-1:end)).*dt;
                 height{j}(i+1) = intvel(end);
             else
                 intacc = cumtrapz(acceleration{j})*dt;
                 vel{j}(i+1) = intacc(end);
-                Q{j}(i+1) = .5*Rho{j}(i)*vel{j}(i)^2;
+                if Mach{j}(i) < 0.3
+                    Q{j}(i+1) = .5*Rho{j}(i)*vel{j}(i)^2;
+                else
+                    Q{j}(i+1) = 0.5 * Mach{j}(i)^ 2 * 1.4 * P{j}(i); %compressible dynamic presure [Pa]
+                end
                 intvel = cumtrapz(vel{j})*dt;
                 height{j}(i+1) = intvel(end);
             end
@@ -405,7 +436,7 @@ while (abs(dif_alt - 1) > alt_tol) & check & o < 4 & go
     if j > 1 && sign_check(j) ~= sign_check(j-1)
         o = o + 1;
     end
-    dv_change = dv_change + (.1/(o^2))*((1-dif_alt)/dif_alt);
+    dv_change = dv_change + (mpl/5)*(.1/(o^2))*((1-dif_alt)/dif_alt);
 end
 
 %% plots
@@ -473,29 +504,20 @@ set(gcf,'Position',[100 100 700 150])
 annotation(gcf,'Textbox','String',TString,'Interpreter','Tex',...
     'FontName',FixedWidth,'Units','Normalized','Position',[0 0 1 1]);
 
-% figure(6)
-% for i = 1:length(ve)
-%     plot(t{j},acceleration{j}./g)
-%     xlabel('Time [sec]')
-%     ylabel('Acceleration [Gs]')
-%     hold on
-%     leg5{j} = strcat('Propellant #',string(i));
-%     grid on
-% end
-% title('Acceleration of Rocket During Flight')
-% legend(leg5,'location','best')
+figure(6)
+plot(t{j},acceleration{j}./g)
+xlabel('Time [sec]')
+ylabel('Acceleration [Gs]')
+title('Acceleration of Rocket During Flight')
 
-% figure(7)
-% for i = 1:length(ve)
-%     plot(t{j}(2:end),Mach{j})
-%     xlabel('Time [sec]')
-%     ylabel('Mach Number')
-%     hold on
-%     leg6{j} = strcat('Propellant #',string(i));
-%     grid on
-% end
-% title('Mach Number of the Rocket During Flight')
-% legend(leg6,'location','best')
+
+figure(7)
+plot(t{j}(2:end),Mach{j})
+xlabel('Time [sec]')
+ylabel('Mach Number')
+hold on
+grid on
+title('Mach Number of the Rocket During Flight')
 
 figure(8)
 Details3 = [tb(end) tb2(end) tot_dv_mission(end)];
@@ -511,4 +533,9 @@ set(gcf,'Position',[100 100 700 150])
 annotation(gcf,'Textbox','String',TString,'Interpreter','Tex',...
     'FontName',FixedWidth,'Units','Normalized','Position',[0 0 1 1]);
 
+figure(9)
+plot(t{j},Q{j}./1000)
+xlabel('Time [sec]')
+ylabel('Dynamic Pressure [kpa]')
+title('Dynamic Pressure During Flight')
 toc
