@@ -30,11 +30,11 @@ function Pareto_write
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 payload = [-1]; %Codes for payload mass
-D_1 = [-2,-3,-4]; %Codes for first-stage diameter 
-D_2 = [-5,-6,-7]; %Codes for second-stage diameter
-alt = [-8,-9,10]; %Codes for desired altitude
-dv_1 = [11,12]; %Codes for dv % split for stage 1
-coast_lim = [13]; %Codes for coasting upper limit
+D_1 = [-2,-3]; %Codes for first-stage diameter 
+D_2 = [-4,-5]; %Codes for second-stage diameter
+alt = [-6,-7,-8]; %Codes for desired altitude
+dv_1 = [-9,10]; %Codes for dv % split for stage 1
+coast_lim = [11]; %Codes for coasting upper limit
 
 x = (combvec(payload, D_1, D_2, alt,dv_1,coast_lim))'; % get all possible pareto combinations
 

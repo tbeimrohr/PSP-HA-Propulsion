@@ -142,12 +142,12 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%5
 
 %% CSV Identification Codes
-mpl_code = {{'01'} [.5]};
-dia1_code = {{'02' '03' '04'} [4.5 5 6]};
-dia2_code = {{'05' '06' '07'}, [3.5 4 4.5]};
-altitude_code = {{'08' '09' '10'}, [100 125 150]};
-deltaV_code = {{'11' '12'}, [.35 .5]};
-coastlim_code = {{'13'}, [0]};
+mpl_code = {{'01'} [1]};
+dia1_code = {{'02' '03'} [5 6]};
+dia2_code = {{'04' '05'}, [4 5]};
+altitude_code = {{'06' '07' '08'}, [100 125 150]};
+deltaV_code = {{'09' '10'}, [.45 .65]};
+coastlim_code = {{'11'}, [0]};
 
 mpl = mpl_code{2}(find(strcmp(mpl_ref, mpl_code{1}) == 1));
 diameter1 = dia1_code{2}(find(strcmp(dia1_ref, dia1_code{1}) == 1));
@@ -157,14 +157,16 @@ desired_deltaV = deltaV_code{2}(find(strcmp(deltaV_ref, deltaV_code{1}) == 1));
 desired_coastlim = coastlim_code{2}(find(strcmp(coastlim_ref, coastlim_code{1}) == 1));
 
 %% Model
-if desired_deltaV == .35
-    shift = -.95;
-elseif desired_deltaV == .5
+if desired_deltaV == .45
+    shift = 0;
+elseif desired_deltaV == .65
     shift = 0;
 end
 
-if mpl == .5
-    dv_change = 4.25 + shift;
+if mpl == 1
+    dv_change = 3 + shift;
+elseif mpl == 5
+    dv_change = 3 + shift;
 end
 
 if exist("ARM_Metrics_temp.xls")
@@ -195,9 +197,9 @@ while (abs(dif_alt - 1) > alt_tol) & check & go
     j = j + 1;
     w = w + 1;
     dt = .01; %sec
-    At_srb = ((.5/12)^2)*pi/10.7639104; %m2, the value is converted from inches^2 to m^2
+    At_srb = ((.5/12)^2)*pi/10.764; %m2, the value is converted from inches^2 to m^2
     ep = [15]; %[26.86 29.2 22.1]; %[Formula#1 Formula#2 Formula#3 ...]
-    At_srb2 = ((.5/12)^2)*pi/10.7639104;  %m2, the value is converted from inches^2 to m^2
+    At_srb2 = ((.5/12)^2)*pi/10.764;  %m2, the value is converted from inches^2 to m^2
     ep2 = [10]; %[26.86 29.2 22.1]./3;
 
     pc_graph = cpp1.coords;
@@ -273,31 +275,57 @@ while (abs(dif_alt - 1) > alt_tol) & check & go
     Area2 = (pi*(diameter2/2)^2)/1550; %m2
 
     Cd_o = .5;
+    coneAngle = (5.74)*2; %deg (multiply by 2 to get double angle)
+    critMach = .7;
+    critMachSup = 1.3;
+    
+    check_neg = 1;
     %% 1D Model
     Ae_srb(j) = ep * At_srb;
     Ae_srb2(j) = ep2 * At_srb2;
+    
+    u = 1;
+    while check_neg == 1
+        dv1 = scale1.*tot_dv_mission(j);
+        dv2 = (1-scale1).*tot_dv_mission(j);
 
-    dv1 = scale1.*tot_dv_mission(j);
-    dv2 = (1-scale1).*tot_dv_mission(j);
+        MR1 = exp((dv1.*1000)./(g.*Isp1));
+        MR2 = exp((dv2.*1000)./(g.*Isp2));
 
-    MR1 = exp((dv1.*1000)./(g.*Isp1));
-    MR2 = exp((dv2.*1000)./(g.*Isp2));
+        mp2{j} = mpl.*((MR2-1)./(MR2-((MR2-1)./lam2))); %kg
+        mi2(j) = mp2{j}.*((1-lam2)./lam2); %kg
+        mo2(j) = mi2(j) + mpl + mp2{j}; %kg
+        mf2(j) = mi2(j) + mpl; %kg
 
-    mp2{j} = mpl.*((MR2-1)./(MR2-((MR2-1)./lam2))); %kg
-    mi2(j) = mp2{j}.*((1-lam2)./lam2); %kg
-    mo2(j) = mi2(j) + mpl + mp2{j}; %kg
-    mf2(j) = mi2(j) + mpl; %kg
-
-    mp{j} = mo2(j).*((MR1-1)./(MR1-((MR1-1)./lam1))); %kg
-    mi(j) = mp{j}.*((1-lam1)./lam1); %kg
-    mo(j) = mi(j) + mo2(j) + mp{j}; %kg
-    mf(j) = mi(j) + mo2(j); %kg
-    if mo(j) < 0
-        skip = -1;
-        break
+        mp{j} = mo2(j).*((MR1-1)./(MR1-((MR1-1)./lam1))); %kg
+        mi(j) = mp{j}.*((1-lam1)./lam1); %kg
+        mo(j) = mi(j) + mo2(j) + mp{j}; %kg
+        mf(j) = mi(j) + mo2(j); %kg
+        mass_vec = [mp2{j} mi2(j) mo2(j) mf2(j) mp{j} mi(j) mo(j) mf(j)];
+        if any(mass_vec < 0)
+            check_neg = 1;
+            if u < 100
+                dv_change = dv_change - ((.2/(o^2))*(((1-dif_alt)^2)/dif_alt))/(2*u);
+                if dv_change < 0
+                    dv_change = -1*dv_change;
+                end
+                tot_dv_mission(j) = dv_change;
+            else
+                dv_change = .3*dv_change;
+                tot_dv_mission(j) = dv_change;
+            end
+        else
+            if o > 1 && u > 1
+                o = o - 1;
+            end
+            check_neg = 0;
+        end
+        u = u + 1;
     end
+    h = 1;
+    o2 = 1;
     while abs(difmp - 1) > tol
-        tb(j) = tb(j) + 2*(1-difmp);
+        tb(j) = tb(j) + (.9/(o2^2))*(1-difmp)/(abs(difmp));
         time_srb = linspace(0,tb(j),length(pc_graph)); %sec
         pc_srb = ModifySize(pc_graph,length(time_srb)); %psi
         cstar1_srb = ModifySize(cstar1,length(time_srb));
@@ -307,7 +335,13 @@ while (abs(dif_alt - 1) > alt_tol) & check & go
         mdot_check = intmdot(end);
 
         difmp = mdot_check/mp{j};
+        sign_check_mp(h) = sign(difmp - 1);
+        if h > 1 && sign_check_mp(h) ~= sign_check_mp(h-1)
+            o2 = o2 + 1;
+        end
+        h = h + 1;
     end
+
 
     time{j} = linspace(0,time_srb(end),time_srb(end)/dt + 1);
     mdot_srb{j} = interp1(time_srb,mdot_srbA{j},time{j});
@@ -318,8 +352,10 @@ while (abs(dif_alt - 1) > alt_tol) & check & go
     cstar1_srb = ModifySize(cstar1,length(time{j}));
     mdotv_srb{j} = mdot_srb{j}.*ve1_srb;
 
+    h = 1;
+    o2 = 1;
     while abs(difmp2 - 1) > tol
-        tb2(j) = tb2(j) + 1*(1-difmp2);
+        tb2(j) = tb2(j) + (.9/(o2^2))*(1-difmp2)/(abs(difmp2));
         time_srb2 = linspace(0,tb2(j),length(pc_graph2)); %sec
         pc_srb2 = ModifySize(pc_graph2,length(time_srb2)); %psi
         cstar2_srb = ModifySize(cstar2,length(time_srb2));
@@ -329,6 +365,11 @@ while (abs(dif_alt - 1) > alt_tol) & check & go
         mdot_check2 = intmdot2(end);
 
         difmp2 = mdot_check2/mp2{j};
+        sign_check_mp2(h) = sign(difmp2 - 1);
+        if h > 1 && sign_check_mp2(h) ~= sign_check_mp2(h-1)
+            o2 = o2 + 1;
+        end
+        h = h + 1;
     end
 
     time2{j} = linspace(0,time_srb2(end),time_srb2(end)/dt + 1);
@@ -369,13 +410,12 @@ while (abs(dif_alt - 1) > alt_tol) & check & go
             mp{j}(i+1) = mp{j}(i) - mdot_srb{j}(i)*dt;
             m{j}(i+1) = mp{j}(i+1) + mi(j) + mo2(j);
             F_srb{j}(i+1) = (mdotv_srb{j}(i) + Ae_srb(j).*(Pe_srb(i) - P{j}(i)));
-            if Mach{j}(i) < .5
-                Cd{j}(i) = Cd_o;
-                %                 Cd{j}(i) = Cd_o/(sqrt(1-(Mach{j}(i))^2));
-            elseif Mach{j}(i) >= .5 & Mach{j}(i) <= 2 & Cd{j}(i-1) > Cd_o*.97
-                Cd{j}(i) = Cd_o^((1-Mach{j}(i))*sign(1-Mach{j}(i)));
+            if Mach{j}(i) < critMach
+                Cd{j}(i) = Cd_o/(sqrt(1-(Mach{j}(i))^2) + (Cd_o/2)*(((Mach{j}(i))^2)/(1+sqrt(1-(Mach{j}(i))^2))));
+            elseif Mach{j}(i) >= critMach && Mach{j}(i) <= critMachSup
+                Cd{j}(i) = 2 - 1/(sqrt(1-(Mach{j}(i) -1)^2));
             else
-                Cd{j}(i) = Cd_o*.97;
+                Cd{j}(i) = Cd_o + deg2rad(coneAngle)/(sqrt((Mach{j}(i))^2 - 1));
             end
             Drag{j}(i+1) = .5*Rho{j}(i)*Cd{j}(i)*(vel{j}(i)^2)*Area1;
             wDrag{j}(i+1) = m{j}(i)*g;
@@ -384,7 +424,11 @@ while (abs(dif_alt - 1) > alt_tol) & check & go
             if i >= 1
                 intacc = vel{j}(i) + cumtrapz(acceleration{j}(end-1:end))*dt;
                 vel{j}(i+1) = intacc(end);
-                Q{j}(i+1) = .5*Rho{j}(i)*vel{j}(i)^2;
+                if Mach{j}(i) < 0.3
+                    Q{j}(i+1) = .5*Rho{j}(i)*vel{j}(i)^2;
+                else
+                    Q{j}(i+1) = 0.5 * Mach{j}(i) ^ 2 * 1.4 * P{j}(i); %compressible dynamic presure [Pa]
+                end
                 intvel = height{j}(i) + cumtrapz(vel{j}(end-1:end))*dt;
                 height{j}(i+1) = intvel(end);
             else
@@ -408,13 +452,12 @@ while (abs(dif_alt - 1) > alt_tol) & check & go
             end
             Mach{j}(i) = vel{j}(i)/Son{j}(i);
             m{j}(i+1) = m{j}(end);
-            if Mach{j}(i) < .5
-                Cd{j}(i) = Cd_o;
-                %                 Cd{j}(i) = Cd_o/(sqrt(1-(Mach{j}(i))^2));
-            elseif Mach{j}(i) >= .5 & Mach{j}(i) <= 2 & Cd{j}(i-1) > Cd_o*.97
-                Cd{j}(i) = Cd_o^((1-Mach{j}(i))*sign(1-Mach{j}(i)));
+            if Mach{j}(i) < critMach
+                Cd{j}(i) = Cd_o/(sqrt(1-(Mach{j}(i))^2) + (Cd_o/2)*(((Mach{j}(i))^2)/(1+sqrt(1-(Mach{j}(i))^2))));
+            elseif Mach{j}(i) >= critMach & Mach{j}(i) <= critMachSup
+                Cd{j}(i) = 2 - 1/(sqrt(1-(Mach{j}(i) -1)^2));
             else
-                Cd{j}(i) = Cd_o*.97;
+                Cd{j}(i) = Cd_o + deg2rad(coneAngle)/(sqrt((Mach{j}(i))^2 - 1));
             end
             Drag{j}(i+1) = .5*Rho{j}(i)*Cd{j}(i)*(vel{j}(i)^2)*Area1;
             wDrag{j}(i+1) = m{j}(i)*g;
@@ -423,13 +466,21 @@ while (abs(dif_alt - 1) > alt_tol) & check & go
             if i >= 1+index_coast(j)
                 intacc = vel{j}(i) + cumtrapz(acceleration{j}(end-1:end))*dt;
                 vel{j}(i+1) = intacc(end);
-                Q{j}(i+1) = .5*Rho{j}(i)*vel{j}(i)^2;
+                if Mach{j}(i) < 0.3
+                    Q{j}(i+1) = .5*Rho{j}(i)*vel{j}(i)^2;
+                else
+                    Q{j}(i+1) = 0.5 * Mach{j}(i) ^ 2 * 1.4 * P{j}(i); %compressible dynamic presure [Pa]
+                end     
                 intvel = height{j}(i) + cumtrapz(vel{j}(end-1:end))*dt;
                 height{j}(i+1) = intvel(end);
             else
                 intacc =cumtrapz(acceleration{j})*dt;
                 vel{j}(i+1) = intacc(end);
-                Q{j}(i+1) = .5*Rho{j}(i)*vel{j}(i)^2;
+                if Mach{j}(i) < 0.3
+                    Q{j}(i+1) = .5*Rho{j}(i)*vel{j}(i)^2;
+                else
+                    Q{j}(i+1) = 0.5 * Mach{j}(i) ^ 2 * 1.4 * P{j}(i); %compressible dynamic presure [Pa]
+                end     
                 intvel = cumtrapz(vel{j})*dt;
                 height{j}(i+1) = intvel(end);
             end
@@ -446,13 +497,12 @@ while (abs(dif_alt - 1) > alt_tol) & check & go
                 Rho{j}(i) = 0;
             end
             Mach{j}(i) = vel{j}(i)/Son{j}(i);
-            if Mach{j}(i) < .5
-                Cd{j}(i) = Cd_o;
-                %                 Cd{j}(i) = Cd_o/(sqrt(1-(Mach{j}(i))^2));
-            elseif Mach{j}(i) >= .5 & Mach{j}(i) <= 2 & Cd{j}(i-1) > Cd_o*.97
-                Cd{j}(i) = Cd_o^((1-Mach{j}(i))*sign(1-Mach{j}(i)));
+            if Mach{j}(i) < critMach
+                Cd{j}(i) = Cd_o/(sqrt(1-(Mach{j}(i))^2) + (Cd_o/2)*(((Mach{j}(i))^2)/(1+sqrt(1-(Mach{j}(i))^2))));
+            elseif Mach{j}(i) >= critMach & Mach{j}(i) <= critMachSup
+                Cd{j}(i) = 2 - 1/(sqrt(1-(Mach{j}(i) -1)^2));
             else
-                Cd{j}(i) = Cd_o*.97;
+                Cd{j}(i) = Cd_o + deg2rad(coneAngle)/(sqrt((Mach{j}(i))^2 - 1));
             end
             mp2{j}(k+1) = mp2{j}(k) - mdot_srb2{j}(k)*dt;
             m{j}(i+1) = mp2{j}(k+1) + mi2(j) + mpl;
@@ -464,13 +514,21 @@ while (abs(dif_alt - 1) > alt_tol) & check & go
             if i >= 1+index_stage(j)
                 intacc = vel{j}(i) + cumtrapz(acceleration{j}(end-1:end))*dt;
                 vel{j}(i+1) = intacc(end);
-                Q{j}(i+1) = .5*Rho{j}(i)*vel{j}(i)^2;
+                if Mach{j}(i) < 0.3
+                    Q{j}(i+1) = .5*Rho{j}(i)*vel{j}(i)^2;
+                else
+                    Q{j}(i+1) = 0.5 * Mach{j}(i) ^ 2 * 1.4 * P{j}(i); %compressible dynamic presure [Pa]
+                end     
                 intvel = height{j}(i) + cumtrapz(vel{j}(end-1:end))*dt;
                 height{j}(i+1) = intvel(end);
             else
                 intacc =cumtrapz(acceleration{j})*dt;
                 vel{j}(i+1) = intacc(end);
-                Q{j}(i+1) = .5*Rho{j}(i)*vel{j}(i)^2;
+                if Mach{j}(i) < 0.3
+                    Q{j}(i+1) = .5*Rho{j}(i)*vel{j}(i)^2;
+                else
+                    Q{j}(i+1) = 0.5 * Mach{j}(i) ^ 2 * 1.4 * P{j}(i); %compressible dynamic presure [Pa]
+                end     
                 intvel = cumtrapz(vel{j})*dt;
                 height{j}(i+1) = intvel(end);
             end
@@ -487,13 +545,12 @@ while (abs(dif_alt - 1) > alt_tol) & check & go
                 Rho{j}(i) = 0;
             end
             Mach{j}(i) = vel{j}(i)/Son{j}(i);
-            if Mach{j}(i) < .5
-                Cd{j}(i) = Cd_o;
-                %                 Cd{j}(i) = Cd_o/(sqrt(1-(Mach{j}(i))^2));
-            elseif Mach{j}(i) >= .5 & Mach{j}(i) <= 2 & Cd{j}(i-1) > Cd_o*.97
-                Cd{j}(i) = Cd_o^((1-Mach{j}(i))*sign(1-Mach{j}(i)));
+            if Mach{j}(i) < critMach
+                Cd{j}(i) = Cd_o/(sqrt(1-(Mach{j}(i))^2) + (Cd_o/2)*(((Mach{j}(i))^2)/(1+sqrt(1-(Mach{j}(i))^2))));
+            elseif Mach{j}(i) >= critMach && Mach{j}(i) <= critMachSup
+                Cd{j}(i) = 2 - 1/(sqrt(1-(Mach{j}(i) -1)^2));
             else
-                Cd{j}(i) = Cd_o*.97;
+                Cd{j}(i) = Cd_o + deg2rad(coneAngle)/(sqrt((Mach{j}(i))^2 - 1));
             end
             m{j}(i+1) = m{j}(end);
             Drag{j}(i+1) = .5*Rho{j}(i)*Cd{j}(i)*(vel{j}(i)^2)*Area2;
@@ -503,21 +560,32 @@ while (abs(dif_alt - 1) > alt_tol) & check & go
             if i >= 1+index_coast2(j)
                 intacc = vel{j}(i) + trapz(acceleration{j}(end-1:end)).*dt;
                 vel{j}(i+1) = intacc(end);
-                Q{j}(i+1) = .5*Rho{j}(i)*vel{j}(i)^2;
+                if Mach{j}(i) < 0.3
+                    Q{j}(i+1) = .5*Rho{j}(i)*vel{j}(i)^2;
+                else
+                    Q{j}(i+1) = 0.5 * Mach{j}(i) ^ 2 * 1.4 * P{j}(i); %compressible dynamic presure [Pa]
+                end
                 intvel = height{j}(i) + trapz(vel{j}(end-1:end)).*dt;
                 height{j}(i+1) = intvel(end);
             else
                 intacc = cumtrapz(acceleration{j})*dt;
                 vel{j}(i+1) = intacc(end);
-                Q{j}(i+1) = .5*Rho{j}(i)*vel{j}(i)^2;
+                if Mach{j}(i) < 0.3
+                    Q{j}(i+1) = .5*Rho{j}(i)*vel{j}(i)^2;
+                else
+                    Q{j}(i+1) = 0.5 * Mach{j}(i) ^ 2 * 1.4 * P{j}(i); %compressible dynamic presure [Pa]
+                end
                 intvel = cumtrapz(vel{j})*dt;
                 height{j}(i+1) = intvel(end);
             end
             i = i + 1;
         end
     end
-
-    dif_alt = (height{j}(end)/(desired_alt*1000));
+    if ~isnan(height{j}(end))
+        dif_alt = (height{j}(end)/(desired_alt*1000));
+    else
+        dif_alt = (height{j}(end-1)/(desired_alt*1000));
+    end
     sign_check(j) = sign(dif_alt - 1);
     tracker(j) = dif_alt;
     if dif_alt >= 5
@@ -525,7 +593,7 @@ while (abs(dif_alt - 1) > alt_tol) & check & go
     elseif dif_alt >= 2 && dif_alt < 5
         skip = 2.25;
     elseif dif_alt > 1.25 && dif_alt < 2
-        skip = 1.25;
+        skip = 1.75;
     else
         skip = 1;
     end
@@ -533,9 +601,11 @@ while (abs(dif_alt - 1) > alt_tol) & check & go
     if dif_alt < .3
         skip = 2.25;
     elseif dif_alt < .8 && dif_alt >= .3
-        skip = 1.25;
+        skip = 1.9;
     end
-
+    if isnan(height{j}(end))
+        skip = 5;
+    end
     if j > 1 && sign_check(j) ~= sign_check(j-1)
         o = o + 1;
     end
@@ -558,7 +628,7 @@ while (abs(dif_alt - 1) > alt_tol) & check & go
             break
         end
     else
-        dv_change = dv_change + skip*(.1/(o^3))*((1-dif_alt)/dif_alt);
+        dv_change = dv_change + skip*(mpl/4)*(1/(2^(1+o/2)))*((1-dif_alt)/dif_alt);
     end
 
     if w > 30 && dif_alt > .975
