@@ -93,12 +93,12 @@ if go
     j = 0;
 end
 %% Constants
-dv_change = 3; %km/s
+dv_change = 4; %km/s
 desired_alt = 100; %km
 diameter1 = 5;%in
 diameter2 = 4; %in
 mpl = 1; %mass of the payload in kg
-scale1 = .35; %the amount of delta v percentage the first stage will carry
+scale1 = .45; %the amount of delta v percentage the first stage will carry
 %% Model
 dif_alt = 2;
 alt_tol = .01;
@@ -281,7 +281,11 @@ while (abs(dif_alt - 1) > alt_tol) & check & o < 4 & go
             if i >= 1
                 intacc = vel{j}(i) + cumtrapz(acceleration{j}(end-1:end))*dt;
                 vel{j}(i+1) = intacc(end);
-                Q{j}(i+1) = .5*Rho{j}(i)*vel{j}(i)^2;
+                if Mach{j}(i) < 0.3
+                    Q{j}(i+1) = .5*Rho{j}(i)*vel{j}(i)^2;
+                else
+                    Q{j}(i+1) = 0.5 * Mach{j}(i) ^ 2 * 1.4 * P{j}(i); %compressible dynamic presure [Pa]
+                end
                 intvel = height{j}(i) + cumtrapz(vel{j}(end-1:end))*dt;
                 height{j}(i+1) = intvel(end);
             else
@@ -323,7 +327,11 @@ while (abs(dif_alt - 1) > alt_tol) & check & o < 4 & go
             if i >= 1+index_coast(j)
                 intacc = vel{j}(i) + cumtrapz(acceleration{j}(end-1:end))*dt;
                 vel{j}(i+1) = intacc(end);
-                Q{j}(i+1) = .5*Rho{j}(i)*vel{j}(i)^2;
+                if Mach{j}(i) < 0.3
+                    Q{j}(i+1) = .5*Rho{j}(i)*vel{j}(i)^2;
+                else
+                    Q{j}(i+1) = 0.5 * Mach{j}(i) ^ 2 * 1.4 * P{j}(i); %compressible dynamic presure [Pa]
+                end
                 intvel = height{j}(i) + cumtrapz(vel{j}(end-1:end))*dt;
                 height{j}(i+1) = intvel(end);
             else
